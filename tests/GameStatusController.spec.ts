@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { GameStatusController } from "../src/controllers/GameStatusController.ts";
 import { GameItem } from "../src/constants.ts";
 
 describe("GameStatusController", () => {
+	beforeEach(() => {
+		localStorage.clear();
+	});
+
 	const createStatus = (): GameStatusController => new GameStatusController();
 
 	it("adds and spends money with floor at zero", () => {
@@ -53,5 +57,38 @@ describe("GameStatusController", () => {
 		expect(status.removeFromInventory(CROP_ITEM, REMOVE_QTY_2)).toBe(false);
 		expect(status.getItemCount(CROP_ITEM)).toBe(CURRENT_COUNT); // Still 1
 	});
-});
 
+	it("does not create a save until state is explicitly saved", () => {
+		const status = createStatus();
+
+		expect(status.hasSavedGame()).toBe(false);
+
+		status.save();
+
+		expect(status.hasSavedGame()).toBe(true);
+	});
+
+	it("persists upgraded defense levels across controller instances", () => {
+		const status = createStatus();
+
+		status.addMoney(1000);
+		expect(status.upgradeDefenseLevel("barbed_wire")).toBe(true);
+		expect(status.upgradeDefenseLevel("barbed_wire")).toBe(true);
+		expect(status.getDefenseLevel("barbed_wire")).toBe(3);
+
+		const reloaded = createStatus();
+
+		expect(reloaded.getDefenseLevel("barbed_wire")).toBe(3);
+	});
+
+	it("clears the save when requested", () => {
+		const status = createStatus();
+
+		status.save();
+		expect(status.hasSavedGame()).toBe(true);
+
+		status.clearSave();
+
+		expect(status.hasSavedGame()).toBe(false);
+	});
+});

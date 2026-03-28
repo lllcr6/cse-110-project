@@ -447,8 +447,22 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private registerEmu(emu: FarmEmuController): void {
+		const originalRemove = emu.remove.bind(emu);
+		emu.remove = () => {
+			const wasActive = emu.isActive();
+			originalRemove();
+			if (wasActive) {
+				this.handleEmuDefeated(emu);
+			}
+		};
 		this.emus.push(emu);
 		this.emuTargets.set(emu, null);
+	}
+
+	private handleEmuDefeated(emu: FarmEmuController): void {
+		this.emuTargets.delete(emu);
+		this.emus = this.emus.filter((candidate) => candidate !== emu);
+		this.updateRoundActionButtonState();
 	}
 
 	private removeEmus(): void {
@@ -638,7 +652,7 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private handleMenuSaveAndExit(): void {
-		this.status.reset();
+		this.status.save();
 		this.screenSwitcher.switchToScreen({ type: "main_menu" });
 	}
 

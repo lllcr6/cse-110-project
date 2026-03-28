@@ -1,5 +1,6 @@
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
+import type { GameStatusController } from "../../controllers/GameStatusController.ts";
 import { MainMenuScreenView } from "./MainMenuScreenView.ts";
 
 /**
@@ -8,26 +9,31 @@ import { MainMenuScreenView } from "./MainMenuScreenView.ts";
 export class MainMenuScreenController extends ScreenController {
 	private view: MainMenuScreenView;
 	private screenSwitcher: ScreenSwitcher;
+    private status: GameStatusController;
 
-	constructor(screenSwitcher: ScreenSwitcher) {
+	constructor(screenSwitcher: ScreenSwitcher, status: GameStatusController) {
 		super();
 		this.screenSwitcher = screenSwitcher;
-		this.view = new MainMenuScreenView(() => this.handleStartClick(), () => this.handleStartClick2(), () => this.handleStartClick3());
+        this.status = status;
+		this.view = new MainMenuScreenView(
+            () => this.handleNewGameClick(),
+            () => this.handleContinueClick(),
+        );
 	}
 
 	/**
 	 * Handle start button click
 	 */
-	private handleStartClick(): void {
+	private handleNewGameClick(): void {
 		this.screenSwitcher.switchToScreen({type: "game_intro"})
 	}
 
-	private handleStartClick2(): void {
-		this.screenSwitcher.switchToScreen({type: "minigame1_raid"})
-	}
-
-	private handleStartClick3(): void {
-		this.screenSwitcher.switchToScreen({type: "minigame2_intro"})
+	private handleContinueClick(): void {
+        if (!this.status.hasSavedGame()) {
+		    this.screenSwitcher.switchToScreen({type: "game_intro"});
+            return;
+        }
+		this.screenSwitcher.switchToScreen({type: "farm", newgame: false});
 	}
 
 	/**

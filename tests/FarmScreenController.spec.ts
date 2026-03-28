@@ -31,6 +31,8 @@ class FakeFarmScreenView {
   clearDefenses = vi.fn();
   setPlacementHint = vi.fn();
   setPlacementCursor = vi.fn();
+  setStartRoundButtonEnabled = vi.fn();
+  setStartRoundTooltip = vi.fn();
   getDefensesLayer = vi.fn(() => ({
     add: vi.fn(),
     draw: vi.fn(),
@@ -131,6 +133,7 @@ vi.mock("../src/screens/PlanningPhaseScreen/PlanningPhaseController.ts", () => (
     deselectAll: vi.fn(),
     clearSelection: vi.fn(),
     setOnPlaceDefenses: vi.fn(),  // Added missing method
+    setPlacementMode: vi.fn(),
   })),
 }));
 
@@ -210,5 +213,82 @@ describe("FarmScreenController", () => {
     expect(status.getItemCount("mine")).toBe(0);
     expect(latestView?.deployMineAtMouse).toHaveBeenCalledTimes(1);
     expect(latestView?.updateMineCount).toHaveBeenCalledWith(0);
+  });
+
+  it("saves progress and returns to the main menu when Save and Exit is used", () => {
+    const { controller, status, switcher } = createController();
+
+    status.addMoney(25);
+    status.addToInventory("sandbag", 2);
+    status.upgradeDefenseLevel("sandbag");
+    expect(status.hasSavedGame()).toBe(true);
+
+    (controller as any).handleMenuSaveAndExit();
+
+    expect(switcher.switchToScreen).toHaveBeenCalledWith({ type: "main_menu" });
+
+    const reloadedStatus = new GameStatusController();
+    expect(reloadedStatus.getMoney()).toBe(status.getMoney());
+    expect(reloadedStatus.getItemCount("sandbag")).toBe(2);
+    expect(reloadedStatus.getDefenseLevel("sandbag")).toBe(2);
+  });
+
+  it("updates round and timer immediately when entering next planning phase", () => {
+    const { controller, status } = createController();
+
+    status.endDay();
+    (controller as any).timeRemaining = 17;
+
+    (controller as any).showPlanningPhase();
+
+    expect(latestView?.updateRound).toHaveBeenCalledWith(2);
+    expect(latestView?.updateTimer).toHaveBeenCalledWith(60);
+  });
+
+  it("enables the next-phase button immediately when the last emu is defeated", () => {
+    const { controller } = createController();
+
+    const emu = {
+      active: true,
+      remove() {
+        this.active = false;
+      },
+      isActive() {
+        return this.active;
+      },
+    } as unknown as FarmEmuController;
+
+    (controller as any).registerEmu(emu);
+    (controller as any).isPlanningPhase = false;
+    (controller as any).isDefensePlacementMode = false;
+    (controller as any).gameTimer = 123;
+
+    emu.remove();
+
+    expect(latestView?.setStartRoundButtonEnabled).toHaveBeenLastCalledWith(true);
+    expect(latestView?.setStartRoundTooltip).toHaveBeenLastCalledWith(
+      "All emus defeated. Click to skip to the next phase",
+    );
+  });
+
+  it("ends the game when all crops are gone during defense placement", () => {
+    const { controller, switcher } = createController();
+
+    (controller as any).isPlanningPhase = false;
+    (controller as any).isDefensePlacementMode = true;
+    (controller as any).gameTimer = null;
+    (controller as any).planters = [
+      {
+        isEmpty: vi.fn(() => true),
+        getView: vi.fn(),
+        takeDamage: vi.fn(),
+      },
+    ];
+
+    (controller as any).checkForCropLoss();
+
+    expect(switcher.switchToScreen).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "game_over" }),
+    );
   });
 });

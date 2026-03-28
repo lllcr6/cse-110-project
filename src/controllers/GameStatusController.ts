@@ -39,7 +39,7 @@ export class GameStatusController {
             this.score = saved.score;
             this.defenseLevels = saved.defenseLevels;
         } else {
-            this.reset();
+            this.reset(false);
         }
     }
 
@@ -62,7 +62,7 @@ export class GameStatusController {
             const parsed = JSON.parse(str) as Partial<PersistedState>;
             return {
                 day: parsed.day ?? 1,
-                inventory: parsed.inventory as Inventory,
+                inventory: this.normalizeInventory(parsed.inventory),
                 emuCount: parsed.emuCount ?? STARTING_EMU_COUNT,
                 score: parsed.score ?? 0,
                 defenseLevels: this.normalizeDefenseLevels(parsed.defenseLevels),
@@ -70,6 +70,18 @@ export class GameStatusController {
         } catch {
             return null;
         }
+    }
+
+    private normalizeInventory(inventory?: Partial<Inventory>): Inventory {
+        return {
+            [GameItem.Money]: Math.max(0, inventory?.[GameItem.Money] ?? 100),
+            [GameItem.Crop]: Math.max(0, inventory?.[GameItem.Crop] ?? 0),
+            [GameItem.Mine]: Math.max(0, inventory?.[GameItem.Mine] ?? 0),
+            [GameItem.Egg]: Math.max(0, inventory?.[GameItem.Egg] ?? 0),
+            [GameItem.BarbedWire]: Math.max(0, inventory?.[GameItem.BarbedWire] ?? 0),
+            [GameItem.Sandbag]: Math.max(0, inventory?.[GameItem.Sandbag] ?? 0),
+            [GameItem.MachineGun]: Math.max(0, inventory?.[GameItem.MachineGun] ?? 0),
+        };
     }
 
     private normalizeDefenseLevels(levels?: Partial<DefenseLevels>): DefenseLevels {
@@ -138,6 +150,20 @@ export class GameStatusController {
         this.save();
     }
 
+    hasSavedGame(): boolean {
+        try {
+            return localStorage.getItem(STORAGE_KEY) !== null;
+        } catch {
+            return false;
+        }
+    }
+
+    clearSave(): void {
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch {}
+    }
+
     getDefenseLevels(): DefenseLevels {
         return { ...this.defenseLevels };
     }
@@ -201,20 +227,14 @@ export class GameStatusController {
 	/**
 	 * Reset game state for a new game
 	 */
-	reset(): void {
+    reset(save: boolean = true): void {
 		this.day = 1;
         this.score = 0;
-		this.inventory = {
-			[GameItem.Money]: 100,        // Starting money
-			[GameItem.Crop]: 0,
-			[GameItem.Mine]: 0,
-			[GameItem.Egg]: 0,
-			[GameItem.BarbedWire]: 0,
-			[GameItem.Sandbag]: 0,
-			[GameItem.MachineGun]: 0,
-		};
+		this.inventory = this.normalizeInventory();
         this.defenseLevels = this.normalizeDefenseLevels();
 		this.emuCount = STARTING_EMU_COUNT;
-		this.save();
+        if (save) {
+		    this.save();
+        }
 	}
 }

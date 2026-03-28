@@ -41,7 +41,7 @@ class App implements ScreenSwitcher {
 
 		this.gameStatusController = new GameStatusController();
 		this.audioManager = new AudioManager();
-		this.menuController = new MainMenuScreenController(this);
+		this.menuController = new MainMenuScreenController(this, this.gameStatusController);
 		this.huntingController = new HuntingScreenController(this, this.audioManager, this.gameStatusController);
 		this.huntingIntroController = new HuntingIntroScreenController(this);
 		this.huntingEndController = new HuntingEndScreenController(this);

@@ -22,9 +22,8 @@ export class MainMenuScreenView implements View {
 	private backgroundPhase = 0;
 
 	constructor(
-		onStartClick: () => void, 
-		onStartClick2: () => void, 
-		onStartClick3: () => void
+		onNewGameClick: () => void,
+		onContinueClick: () => void,
 	) {
 		this.group = new Konva.Group({ visible: true });
 
@@ -61,10 +60,10 @@ export class MainMenuScreenView implements View {
 		title.offsetX(title.width() / 2);
 		this.group.add(title);
 
-		const startButtonGroup = new Konva.Group();
-		const startButton = new Konva.Rect({
+		const newGameButtonGroup = new Konva.Group();
+		const newGameButton = new Konva.Rect({
 			x: STAGE_WIDTH / 2 - 100,
-			y: 300,
+			y: 320,
 			width: 200,
 			height: 60,
 			fill: "green",
@@ -72,72 +71,46 @@ export class MainMenuScreenView implements View {
 			stroke: "darkgreen",
 			strokeWidth: 3,
 		});
-		const startText = new Konva.Text({
+		const newGameText = new Konva.Text({
 			x: STAGE_WIDTH / 2,
-			y: 315,
-			text: "START GAME",
+			y: 335,
+			text: "NEW GAME",
 			fontSize: 24,
 			fontFamily: "Arial",
 			fill: "white",
 			align: "center",
 		});
-		startText.offsetX(startText.width() / 2);
-		startButtonGroup.add(startButton);
-		startButtonGroup.add(startText);
-		startButtonGroup.on("click", onStartClick);
-		this.group.add(startButtonGroup);
+		newGameText.offsetX(newGameText.width() / 2);
+		newGameButtonGroup.add(newGameButton);
+		newGameButtonGroup.add(newGameText);
+		newGameButtonGroup.on("click", onNewGameClick);
+		this.group.add(newGameButtonGroup);
 
-		const startButtonGroup2 = new Konva.Group();
-    	const startButton2 = new Konva.Rect({
+		const continueButtonGroup = new Konva.Group();
+    	const continueButton = new Konva.Rect({
       		x: STAGE_WIDTH / 2 - 100,
-      		y: 380,
+      		y: 400,
 			width: 200,
 			height: 60,
-			fill: "green",
+			fill: "#1565c0",
 			cornerRadius: 10,
-			stroke: "darkgreen",
+			stroke: "#0d47a1",
 			strokeWidth: 3,
    		 });
-   		 const startText2 = new Konva.Text({
+   		 const continueText = new Konva.Text({
 			x: STAGE_WIDTH / 2,
-			y: 395,
-			text: "Start Minigame 1",
+			y: 415,
+			text: "CONTINUE",
 			fontSize: 24,
 			fontFamily: "Arial",
 			fill: "white",
 			align: "center",
    		 });
-		startText2.offsetX(startText2.width() / 2);
-		startButtonGroup2.add(startButton2);
-		startButtonGroup2.add(startText2);
-		startButtonGroup2.on("click", onStartClick2);
-		this.group.add(startButtonGroup2);
-
-		const startButtonGroup3 = new Konva.Group();
-    	const startButton3 = new Konva.Rect({
-      		x: STAGE_WIDTH / 2 - 100,
-      		y: 450,
-			width: 200,
-			height: 60,
-			fill: "green",
-			cornerRadius: 10,
-			stroke: "darkgreen",
-			strokeWidth: 3,
-   		 });
-   		 const startText3 = new Konva.Text({
-			x: STAGE_WIDTH / 2,
-			y: 465,
-			text: "Start Minigame 2",
-			fontSize: 24,
-			fontFamily: "Arial",
-			fill: "white",
-			align: "center",
-   		 });
-		startText3.offsetX(startText3.width() / 2);
-		startButtonGroup3.add(startButton3);
-		startButtonGroup3.add(startText3);
-		startButtonGroup3.on("click", onStartClick3);
-		this.group.add(startButtonGroup3);
+		continueText.offsetX(continueText.width() / 2);
+		continueButtonGroup.add(continueButton);
+		continueButtonGroup.add(continueText);
+		continueButtonGroup.on("click", onContinueClick);
+		this.group.add(continueButtonGroup);
 	}
 
 	show(): void {

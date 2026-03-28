@@ -134,7 +134,7 @@ export class GameOverScreenController extends ScreenController {
 	 * Handle play again button click
 	 */
 	private handlePlayAgainClick(): void {
-		this.status.reset();
+        this.status.clearSave();
 		this.screenSwitcher.switchToScreen({ type: "main_menu" });
 	}
 

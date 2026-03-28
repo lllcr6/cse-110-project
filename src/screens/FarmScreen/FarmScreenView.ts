@@ -362,7 +362,7 @@ export class FarmScreenView implements View {
 		});
 
 		const saveText = new Konva.Text({
-			text: "Go to Main Menu",
+			text: "Save and Exit",
 			fontSize: 24,
 			fontFamily: "Arial",
 			fill: "white",
