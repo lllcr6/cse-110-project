@@ -6,7 +6,7 @@
 
 Play now:
 
-[https://lllcr6.github.io/cse-110-project/](https://lllcr6.github.io/cse-110-project/)
+[https://lllcr6.github.io/Emu-Defense-cse-110-project/](https://lllcr6.github.io/Emu-Defense-cse-110-project/)
 
 ## About
 
