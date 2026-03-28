@@ -876,7 +876,7 @@ export class FarmScreenController extends ScreenController {
 								emuShape.x() + emuShape.width() / 2,
 								emuShape.y() + emuShape.height() / 2
 							);
-							closestEmu.reduceHealth(closestEmu.getMaxHealth());
+							closestEmu.reduceHealth(40);
 						}
 						closestEmu.remove();
 						emusToRemove.push(closestEmu);
