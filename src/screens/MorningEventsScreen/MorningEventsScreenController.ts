@@ -109,6 +109,7 @@ export class MorningEventsScreenController extends ScreenController {
             this.status.addToInventory(GameItem.Crop, 1);
             this.audio.playSfx("buy");
             this.refreshUI();
+            this.handleOpenShop();
         }
     }
 
@@ -118,6 +119,7 @@ export class MorningEventsScreenController extends ScreenController {
             this.status.addToInventory(GameItem.Money, price);
             this.audio.playSfx("sell");
             this.refreshUI();
+            this.handleOpenShop();
         }
     }
 
@@ -127,6 +129,7 @@ export class MorningEventsScreenController extends ScreenController {
             this.status.addToInventory(GameItem.Money, price);
             this.audio.playSfx("sell");
             this.refreshUI();
+            this.handleOpenShop();
         }
     }
 

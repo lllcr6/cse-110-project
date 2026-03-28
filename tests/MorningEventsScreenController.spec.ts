@@ -111,6 +111,7 @@ describe("MorningEventsScreenController", () => {
         
 		expect(status.getMoney()).toBe(STARTING_MONEY + ADDED_MONEY - COST_OF_CROP); // 110
 		expect(status.getItemCount(GameItem.Crop)).toBe(1);
+		expect(latestView?.showShopPopup).toHaveBeenCalledTimes(1);
 	});
 
 	it("sells crops when available", () => {
@@ -138,4 +139,3 @@ describe("MorningEventsScreenController", () => {
 		expect(controller.getView().getGroup().visible()).toBe(false);
 	});
 });
-
