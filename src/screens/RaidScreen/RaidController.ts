@@ -217,7 +217,7 @@ export class RaidController extends ScreenController {
 
 		setTimeout(() => {
 			this.view.hide();
-			this.screenSwitcher.switchToScreen({ type: "farm", newgame:false });
+			this.screenSwitcher.switchToScreen({ type: "farm", newgame:false, returnFromMinigame: true });
 		}, 5000);
 	}
 

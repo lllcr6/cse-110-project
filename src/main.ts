@@ -99,7 +99,7 @@ class App implements ScreenSwitcher {
 			case "farm":
 				// Start the game (which also shows the game screen)
 				this.audioManager.playBgm("farm");
-				this.farmController.startGame(screen.newgame);
+				this.farmController.startGame(screen.newgame, screen.returnFromMinigame ?? false);
 				// startGame() will call startRound() or show planning phase
 				break;
 
