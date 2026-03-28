@@ -28,6 +28,21 @@ export class PlanningPhaseController {
 		this.view.setOnDefenseSelected(handler);
 	}
 
+	showMinigamePrompt(
+		title: string,
+		description: string,
+		continueLabel: string,
+		skipLabel: string,
+		onContinue: () => void,
+		onSkip: () => void,
+	): void {
+		this.view.showMinigamePrompt(title, description, continueLabel, skipLabel, onContinue, onSkip);
+	}
+
+	hideMinigamePrompt(): void {
+		this.view.hideMinigamePrompt();
+	}
+
 	getSelectedDefenseType(): DefenseType | null {
 		return this.view.getSelectedDefenseType();
 	}

@@ -158,6 +158,8 @@ vi.mock("../src/screens/PlanningPhaseScreen/PlanningPhaseController.ts", () => (
       clearSelection: vi.fn(),
       setOnPlaceDefenses: vi.fn(),
       setPlacementMode: vi.fn(),
+      showMinigamePrompt: vi.fn(),
+      hideMinigamePrompt: vi.fn(),
       getView: vi.fn(() => ({
         getGroup: vi.fn(() => ({
           visible: vi.fn(),
@@ -373,8 +375,7 @@ describe("FarmScreenController", () => {
 
     expect(morningStub.showOverlay).not.toHaveBeenCalled();
     expect(planter.advanceDay).not.toHaveBeenCalled();
-    expect(latestView?.hideHuntMenuOverlay).toHaveBeenCalled();
-    expect(latestView?.hideEggMenuOverlay).toHaveBeenCalled();
+    expect(latestPlanningPhase?.hideMinigamePrompt).toHaveBeenCalled();
     expect(latestView?.updateRound).toHaveBeenCalled();
     expect(latestView?.updateTimer).toHaveBeenCalledWith(60);
   });

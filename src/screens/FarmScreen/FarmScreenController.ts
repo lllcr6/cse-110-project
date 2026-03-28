@@ -191,10 +191,9 @@ export class FarmScreenController extends ScreenController {
 		this.showDefenseTray();
 
 		if (returnFromMinigame) {
-			this.view.hideHuntMenuOverlay();
-			this.view.hideEggMenuOverlay();
 			this.view.hideMenuOverlay();
 			this.view.hideReplantOverlay();
+			this.planningPhase?.hideMinigamePrompt();
 			this.pendingMinigame = null;
 			this.isWaitingForMinigameChoice = false;
 			this.syncHudForUpcomingRound();
@@ -701,8 +700,8 @@ export class FarmScreenController extends ScreenController {
 		this.status.save();
 		this.pendingMinigame = null;
 		this.isWaitingForMinigameChoice = false;
+		this.planningPhase?.hideMinigamePrompt();
 		this.screenSwitcher.switchToScreen({ type: "minigame2_intro" });
-		this.view.hideHuntMenuOverlay();
 	}
 
 	//Handling options in the egg menu:
@@ -710,20 +709,20 @@ export class FarmScreenController extends ScreenController {
 		this.status.save();
 		this.pendingMinigame = null;
 		this.isWaitingForMinigameChoice = false;
+		this.planningPhase?.hideMinigamePrompt();
 		this.screenSwitcher.switchToScreen({ type: "minigame1_raid" });
-		this.view.hideEggMenuOverlay();
 	}
 
 	//Skip for both hunt and egg games are the same:
 	private handleSkipHunt(): void {
-		this.view.hideHuntMenuOverlay();
+		this.planningPhase?.hideMinigamePrompt();
 		this.pendingMinigame = null;
 		this.isWaitingForMinigameChoice = false;
 		this.activateRound();
 	}
 
 	private handleSkipEgg(): void {
-		this.view.hideEggMenuOverlay();
+		this.planningPhase?.hideMinigamePrompt();
 		this.pendingMinigame = null;
 		this.isWaitingForMinigameChoice = false;
 		this.activateRound();
@@ -792,10 +791,24 @@ export class FarmScreenController extends ScreenController {
 		this.pendingMinigame = prompt;
 		this.view.setPlacementCursor(false);
 		if (prompt === "hunt") {
-			this.view.showHuntMenuOverlay();
-		} else {
-			this.view.showEggMenuOverlay();
+			this.planningPhase?.showMinigamePrompt(
+				"Hunt Opportunity",
+				"Track the emus for bonus rewards before the farm raid begins.\nChoose whether to play the minigame or skip it and start the round immediately.",
+				"Continue",
+				"Skip Minigame",
+				() => this.handleHuntCont(),
+				() => this.handleSkipHunt(),
+			);
+			return;
 		}
+		this.planningPhase?.showMinigamePrompt(
+			"Egg Raid Opportunity",
+			"Sneak into emu territory and collect eggs before returning to defend the farm.\nChoose whether to play the minigame or skip it and start the round immediately.",
+			"Continue",
+			"Skip Minigame",
+			() => this.handleEggCont(),
+			() => this.handleSkipEgg(),
+		);
 	}
 
 

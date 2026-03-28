@@ -15,6 +15,13 @@ export class PlanningPhaseView implements View {
 	private tutorialPanel: Konva.Group;
 	private defenseSelectionPanel: Konva.Group;
 	private startButton: Konva.Group;
+	private minigameOverlay: Konva.Group;
+	private minigameTitle: Konva.Text | null = null;
+	private minigameDescription: Konva.Text | null = null;
+	private minigameContinueText: Konva.Text | null = null;
+	private minigameSkipText: Konva.Text | null = null;
+	private onMinigameContinue: (() => void) | null = null;
+	private onMinigameSkip: (() => void) | null = null;
 	private selectionPanelBackdrop: Konva.Rect | null = null;
 	private selectionPanelTitle: Konva.Text | null = null;
 	private selectionPanelHint: Konva.Text | null = null;
@@ -30,16 +37,19 @@ export class PlanningPhaseView implements View {
 		this.tutorialPanel = new Konva.Group({ listening: true });
 		this.defenseSelectionPanel = new Konva.Group({ listening: true });
 		this.startButton = new Konva.Group({ listening: true });
+		this.minigameOverlay = new Konva.Group({ visible: false, listening: true });
 
 		this.createOverlay();
 		this.createTutorialPanel();
 		this.createDefenseSelectionPanel();
 		this.createStartButton();
+		this.createMinigameOverlay();
 
 		this.group.add(this.overlay);
 		this.group.add(this.tutorialPanel);
 		this.group.add(this.defenseSelectionPanel);
 		this.group.add(this.startButton);
+		this.group.add(this.minigameOverlay);
 	}
 
 	private createOverlay(): void {
@@ -343,12 +353,251 @@ export class PlanningPhaseView implements View {
 		this.startButton.add(button);
 	}
 
+	private createMinigameOverlay(): void {
+		const panelWidth = 560;
+		const panelHeight = 360;
+		const panelX = (STAGE_WIDTH - panelWidth) / 2;
+		const panelY = 300;
+
+		const backdrop = new Konva.Rect({
+			x: 0,
+			y: 0,
+			width: STAGE_WIDTH,
+			height: STAGE_HEIGHT,
+			fill: "rgba(8, 12, 10, 0.78)",
+			listening: true,
+		});
+		backdrop.on("mouseup", (evt) => {
+			evt.cancelBubble = true;
+		});
+
+		const shadow = new Konva.Rect({
+			x: panelX + 10,
+			y: panelY + 12,
+			width: panelWidth,
+			height: panelHeight,
+			fill: "rgba(0, 0, 0, 0.25)",
+			cornerRadius: 26,
+			listening: false,
+		});
+
+		const frame = new Konva.Rect({
+			x: panelX,
+			y: panelY,
+			width: panelWidth,
+			height: panelHeight,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: panelHeight },
+			fillLinearGradientColorStops: [0, "#6f4b34", 1, "#4a2f20"],
+			stroke: "#2e1d14",
+			strokeWidth: 2,
+			cornerRadius: 26,
+			listening: false,
+		});
+
+		const innerPanel = new Konva.Rect({
+			x: panelX + 14,
+			y: panelY + 14,
+			width: panelWidth - 28,
+			height: panelHeight - 28,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: panelHeight - 28 },
+			fillLinearGradientColorStops: [0, "#f4e5c8", 1, "#e6cf9e"],
+			stroke: "#c18f42",
+			strokeWidth: 2,
+			cornerRadius: 20,
+			listening: false,
+		});
+
+		const badge = new Konva.Label({
+			x: panelX + 28,
+			y: panelY + 28,
+			listening: false,
+		});
+		badge.add(new Konva.Tag({
+			fill: "#274e3c",
+			cornerRadius: 999,
+			pointerDirection: "none",
+		}));
+		badge.add(new Konva.Text({
+			text: "MINIGAME EVENT",
+			fontSize: 12,
+			fontFamily: "Georgia",
+			fontStyle: "bold",
+			fill: "#f8f0df",
+			padding: 12,
+			letterSpacing: 1.2,
+		}));
+
+		this.minigameTitle = new Konva.Text({
+			x: panelX + 34,
+			y: panelY + 92,
+			width: panelWidth - 68,
+			text: "Minigame Opportunity",
+			fontSize: 34,
+			fontFamily: "Georgia",
+			fontStyle: "bold",
+			fill: "#3a2418",
+			align: "center",
+			listening: false,
+		});
+
+		const divider = new Konva.Line({
+			points: [panelX + 64, panelY + 154, panelX + panelWidth - 64, panelY + 154],
+			stroke: "#b9823b",
+			strokeWidth: 2,
+			opacity: 0.8,
+			listening: false,
+		});
+
+		this.minigameDescription = new Konva.Text({
+			x: panelX + 52,
+			y: panelY + 184,
+			width: panelWidth - 104,
+			text: "",
+			fontSize: 18,
+			fontFamily: "Georgia",
+			fill: "#5d4030",
+			align: "center",
+			lineHeight: 1.45,
+			listening: false,
+		});
+
+		const skipButton = new Konva.Group({
+			x: panelX + 40,
+			y: panelY + 286,
+			cursor: "pointer",
+			listening: true,
+		});
+		const skipShadow = new Konva.Rect({
+			x: 0,
+			y: 4,
+			width: 220,
+			height: 50,
+			fill: "rgba(69, 51, 35, 0.18)",
+			cornerRadius: 16,
+			listening: false,
+		});
+		const skipBg = new Konva.Rect({
+			width: 220,
+			height: 50,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: 50 },
+			fillLinearGradientColorStops: [0, "#d2b98d", 1, "#b79668"],
+			stroke: "#7d6441",
+			strokeWidth: 2,
+			cornerRadius: 16,
+			listening: true,
+		});
+		this.minigameSkipText = new Konva.Text({
+			text: "Skip Minigame",
+			fontSize: 18,
+			fontFamily: "Arial",
+			fontStyle: "bold",
+			fill: "#3b2a1d",
+			width: 220,
+			y: 14,
+			align: "center",
+			listening: false,
+		});
+		skipButton.add(skipShadow);
+		skipButton.add(skipBg);
+		skipButton.add(this.minigameSkipText);
+		skipButton.on("mouseup", () => this.onMinigameSkip?.());
+
+		const continueButton = new Konva.Group({
+			x: panelX + panelWidth - 260,
+			y: panelY + 286,
+			cursor: "pointer",
+			listening: true,
+		});
+		const continueShadow = new Konva.Rect({
+			x: 0,
+			y: 4,
+			width: 220,
+			height: 50,
+			fill: "rgba(69, 27, 11, 0.24)",
+			cornerRadius: 16,
+			listening: false,
+		});
+		const continueBg = new Konva.Rect({
+			width: 220,
+			height: 50,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: 50 },
+			fillLinearGradientColorStops: [0, "#c45d35", 1, "#923317"],
+			stroke: "#5f1f10",
+			strokeWidth: 2,
+			cornerRadius: 16,
+			listening: true,
+		});
+		this.minigameContinueText = new Konva.Text({
+			text: "Continue",
+			fontSize: 18,
+			fontFamily: "Arial",
+			fontStyle: "bold",
+			fill: "#fff7ea",
+			width: 220,
+			y: 14,
+			align: "center",
+			listening: false,
+		});
+		continueButton.add(continueShadow);
+		continueButton.add(continueBg);
+		continueButton.add(this.minigameContinueText);
+		continueButton.on("mouseup", () => this.onMinigameContinue?.());
+
+		this.minigameOverlay.add(backdrop);
+		this.minigameOverlay.add(shadow);
+		this.minigameOverlay.add(frame);
+		this.minigameOverlay.add(innerPanel);
+		this.minigameOverlay.add(badge);
+		this.minigameOverlay.add(this.minigameTitle);
+		this.minigameOverlay.add(divider);
+		this.minigameOverlay.add(this.minigameDescription);
+		this.minigameOverlay.add(skipButton);
+		this.minigameOverlay.add(continueButton);
+	}
+
 	setOnPlaceDefenses(handler: () => void): void {
 		this.onPlaceDefenses = handler;
 	}
 
 	setOnDefenseSelected(handler: (type: DefenseType | null) => void): void {
 		this.onDefenseSelected = handler;
+	}
+
+	showMinigamePrompt(
+		title: string,
+		description: string,
+		continueLabel: string,
+		skipLabel: string,
+		onContinue: () => void,
+		onSkip: () => void,
+	): void {
+		this.hideTooltip();
+		this.onMinigameContinue = onContinue;
+		this.onMinigameSkip = onSkip;
+		this.minigameTitle?.text(title);
+		this.minigameDescription?.text(description);
+		this.minigameContinueText?.text(continueLabel);
+		this.minigameSkipText?.text(skipLabel);
+		this.minigameOverlay.visible(true);
+		this.minigameOverlay.moveToTop();
+		this.defenseSelectionPanel.listening(false);
+		this.tutorialPanel.listening(false);
+		this.startButton.listening(false);
+		this.group.getLayer()?.draw();
+	}
+
+	hideMinigamePrompt(): void {
+		this.onMinigameContinue = null;
+		this.onMinigameSkip = null;
+		this.minigameOverlay.visible(false);
+		this.defenseSelectionPanel.listening(true);
+		this.tutorialPanel.listening(true);
+		this.startButton.listening(true);
+		this.group.getLayer()?.draw();
 	}
 
 	private showTooltip(defenseType: DefenseType, x: number, y: number): void {
@@ -456,6 +705,7 @@ export class PlanningPhaseView implements View {
 	}
 
 	hide(): void {
+		this.hideMinigamePrompt();
 		this.group.visible(false);
 	}
 }
