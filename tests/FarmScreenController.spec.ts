@@ -29,6 +29,7 @@ class FakeFarmScreenView {
   showReplantOverlay = vi.fn();
   hideReplantOverlay = vi.fn();
   removeMineSprite = vi.fn();
+  deployMineAt = vi.fn();
   setDefensePlaceClickHandler = vi.fn();
   setPlanningPhaseMode = vi.fn();
   addDefense = vi.fn();
@@ -299,7 +300,7 @@ describe("FarmScreenController", () => {
     // Add mine to inventory
     status.addToInventory("mine", 1);
 
-    // Mock deployMineAtMouse to return a valid placement
+    // Mock deployMineAt to return a valid placement
     const mockPlacement = { 
       node: { 
         x: vi.fn(), 
@@ -309,13 +310,13 @@ describe("FarmScreenController", () => {
       }, 
       size: 30 
     };
-    latestView!.deployMineAtMouse = vi.fn(() => mockPlacement);
+    latestView!.deployMineAt = vi.fn(() => mockPlacement);
 
     // Test the handleDeployMine method directly
     (controller as any).handleDeployMine();
 
     expect(status.getItemCount("mine")).toBe(0);
-    expect(latestView?.deployMineAtMouse).toHaveBeenCalledTimes(1);
+    expect(latestView?.deployMineAt).toHaveBeenCalledTimes(1);
     expect(latestView?.updateMineCount).toHaveBeenCalledWith(0);
   });
 
@@ -364,6 +365,7 @@ describe("FarmScreenController", () => {
 
     const planter = {
       advanceDay: vi.fn(),
+      isEmpty: vi.fn(() => false),
     };
     (controller as any).planters = [planter];
 

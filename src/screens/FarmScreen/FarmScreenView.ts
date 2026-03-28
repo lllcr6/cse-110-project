@@ -70,7 +70,7 @@ export class FarmScreenView implements View {
 	private startRoundTooltipMessage = "Start this round after placing defenses";
 	private mouseX: number = 0;
 	private mouseY: number = 0;
-	private placementHintDefault = "Press M to place a mine. Select a defense item and press T to place it. Click emus to attack.";
+	private placementHintDefault = "Click emus to attack.";
 
 	constructor(
 		handleKeydown: (event: KeyboardEvent) => void,
@@ -417,7 +417,10 @@ export class FarmScreenView implements View {
 
 		//Hunting Menu overlay:
 		this.huntMenuOverlay = this.createOverlay(
-			"You Have An Opportunity to Hunt!!!",
+			"Hunt Opportunity",
+			"Track the emus for bonus rewards before the farm raid begins.",
+			"Continue",
+			"Skip Minigame",
 			() => this.huntContinueHandler?.(),
 			() => this.huntSkipHandler?.()
 		);
@@ -425,7 +428,10 @@ export class FarmScreenView implements View {
 
 		//Egg Menu overlay:
 		this.eggMenuOverlay = this.createOverlay(
-			"You Have An Opportunity to Collect!!!",
+			"Egg Raid Opportunity",
+			"Sneak into emu territory and grab eggs before you return to defend the farm.",
+			"Continue",
+			"Skip Minigame",
 			() => this.eggContinueHandler?.(),
 			() => this.eggSkipHandler?.()
 		);
@@ -548,13 +554,18 @@ export class FarmScreenView implements View {
 	}
 
 	//For adding overlays to access minigames:
-	private createOverlay(msg: string, 
-		continueHandler: (() => void) | null, 
-		skipHandler: (() => void) | null) {
+	private createOverlay(
+		title: string,
+		description: string,
+		continueLabel: string,
+		skipLabel: string,
+		continueHandler: (() => void) | null,
+		skipHandler: (() => void) | null,
+	) {
 
 		const overlay = new Konva.Group({ visible: false });
-		const panelWidth = 336;
-		const panelHeight = 208;
+		const panelWidth = 520;
+		const panelHeight = 350;
 		const panelX = (STAGE_WIDTH - panelWidth) / 2;
 		const panelY = (STAGE_HEIGHT - panelHeight) / 2;
 
@@ -563,100 +574,219 @@ export class FarmScreenView implements View {
 			y: 0,
 			width: STAGE_WIDTH,
 			height: STAGE_HEIGHT,
-			fill: "rgba(0, 0, 0, 0.55)",
+			fill: "rgba(8, 12, 10, 0.8)",
 		});
 		overlayBackground.on("mouseup", (evt) => {
 			evt.cancelBubble = true;
 		});
 
+		const shadow = new Konva.Rect({
+			x: panelX + 8,
+			y: panelY + 10,
+			width: panelWidth,
+			height: panelHeight,
+			fill: "rgba(0, 0, 0, 0.22)",
+			cornerRadius: 24,
+		});
 
-		const overlayPanel = new Konva.Rect({
+		const panelFrame = new Konva.Rect({
 			x: panelX,
 			y: panelY,
 			width: panelWidth,
 			height: panelHeight,
-			fill: "#f5f5f5",
-			stroke: "#333333",
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: panelHeight },
+			fillLinearGradientColorStops: [0, "#6f4b34", 1, "#4a2f20"],
+			stroke: "#2e1d14",
 			strokeWidth: 2,
-			cornerRadius: 12,
+			cornerRadius: 24,
 		});
 
+		const innerPanel = new Konva.Rect({
+			x: panelX + 12,
+			y: panelY + 12,
+			width: panelWidth - 24,
+			height: panelHeight - 24,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: panelHeight - 24 },
+			fillLinearGradientColorStops: [0, "#f4e5c8", 1, "#e6cf9e"],
+			stroke: "#c18f42",
+			strokeWidth: 2,
+			cornerRadius: 18,
+		});
+
+		const badge = new Konva.Label({
+			x: panelX + 28,
+			y: panelY + 26,
+		});
+		badge.add(new Konva.Tag({
+			fill: "#274e3c",
+			cornerRadius: 999,
+			padding: 0,
+			pointerDirection: "none",
+		}));
+		badge.add(new Konva.Text({
+			text: "MINIGAME EVENT",
+			fontSize: 12,
+			fontFamily: "Georgia",
+			fontStyle: "bold",
+			fill: "#f8f0df",
+			padding: 10,
+			letterSpacing: 1.2,
+		}));
+
 		const overlayTitle = new Konva.Text({
-			x: panelX,
-			y: panelY + 19,
-			width: panelWidth,
-			text: msg,
-			fontSize: 26,
-			fontFamily: "Arial",
-			fill: "#333333",
+			x: panelX + 28,
+			y: panelY + 72,
+			width: panelWidth - 56,
+			text: title,
+			fontSize: 32,
+			fontFamily: "Georgia",
+			fontStyle: "bold",
+			fill: "#3a2418",
 			align: "center",
+		});
+
+		const divider = new Konva.Line({
+			points: [
+				panelX + 52,
+				panelY + 122,
+				panelX + panelWidth - 52,
+				panelY + 122,
+			],
+			stroke: "#b9823b",
+			strokeWidth: 2,
+			opacity: 0.8,
+		});
+
+		const descriptionText = new Konva.Text({
+			x: panelX + 44,
+			y: panelY + 140,
+			width: panelWidth - 88,
+			text: `${description}\nChoose whether to play the minigame or skip it and start the round immediately.`,
+			fontSize: 17,
+			fontFamily: "Georgia",
+			fill: "#5d4030",
+			align: "center",
+			lineHeight: 1.45,
 		});
 
 		const skipButton = new Konva.Group({
-			x: panelX + 32,
-			y: panelY + 80,
+			x: panelX + 34,
+			y: panelY + 278,
 			cursor: "pointer",
 		});
 
+		const skipRectShadow = new Konva.Rect({
+			x: 0,
+			y: 4,
+			width: 180,
+			height: 44,
+			fill: "rgba(69, 51, 35, 0.18)",
+			cornerRadius: 14,
+		});
+
 		const skipRect = new Konva.Rect({
-			width: panelWidth - 64,
-			height: 45,
-			fill: "#2e7d32",
-			cornerRadius: 10,
+			width: 180,
+			height: 44,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: 44 },
+			fillLinearGradientColorStops: [0, "#d2b98d", 1, "#b79668"],
+			stroke: "#7d6441",
+			strokeWidth: 2,
+			cornerRadius: 14,
 		});
 
 		const skipText = new Konva.Text({
-			text: "Skip",
-			fontSize: 20,
+			text: skipLabel,
+			fontSize: 16,
 			fontFamily: "Arial",
-			fill: "white",
-			width: panelWidth - 64,
-			y: 14,
+			fontStyle: "bold",
+			fill: "#3b2a1d",
+			width: 180,
+			y: 13,
 			align: "center",
 		});
 
+		skipButton.add(skipRectShadow);
 		skipButton.add(skipRect);
 		skipButton.add(skipText);
+		skipButton.on("mouseenter", () => {
+			skipRect.fillLinearGradientColorStops([0, "#ddc79f", 1, "#c3a270"]);
+			overlay.getLayer()?.draw();
+		});
+		skipButton.on("mouseleave", () => {
+			skipRect.fillLinearGradientColorStops([0, "#d2b98d", 1, "#b79668"]);
+			overlay.getLayer()?.draw();
+		});
 		skipButton.on("mouseup", () => {
 			skipHandler?.();
 		});
 
 		const continueButton = new Konva.Group({
-			x: panelX + 32,
-			y: panelY + 136,
+			x: panelX + panelWidth - 214,
+			y: panelY + 278,
 			cursor: "pointer",
 		});
 
+		const continueRectShadow = new Konva.Rect({
+			x: 0,
+			y: 4,
+			width: 180,
+			height: 44,
+			fill: "rgba(69, 27, 11, 0.24)",
+			cornerRadius: 14,
+		});
+
 		const continueRect = new Konva.Rect({
-			width: panelWidth - 64,
-			height: 45,
-			fill: "#c62828",
-			cornerRadius: 10,
+			width: 180,
+			height: 44,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: 44 },
+			fillLinearGradientColorStops: [0, "#c45d35", 1, "#923317"],
+			stroke: "#5f1f10",
+			strokeWidth: 2,
+			cornerRadius: 14,
 		});
 
 		const continueText = new Konva.Text({
-			text: "Continue",
-			fontSize: 20,
+			text: continueLabel,
+			fontSize: 16,
 			fontFamily: "Arial",
-			fill: "white",
-			width: panelWidth - 64,
-			y: 14,
+			fontStyle: "bold",
+			fill: "#fff7ea",
+			width: 180,
+			y: 13,
 			align: "center",
 		});
 
+		continueButton.add(continueRectShadow);
 		continueButton.add(continueRect);
 		continueButton.add(continueText);
+		continueButton.on("mouseenter", () => {
+			continueRect.fillLinearGradientColorStops([0, "#d9784d", 1, "#a73e1f"]);
+			overlay.getLayer()?.draw();
+		});
+		continueButton.on("mouseleave", () => {
+			continueRect.fillLinearGradientColorStops([0, "#c45d35", 1, "#923317"]);
+			overlay.getLayer()?.draw();
+		});
 		continueButton.on("mouseup", () => {
 			continueHandler?.();
 		});
 
 		overlay.add(overlayBackground);
-		overlay.add(overlayPanel);
+		overlay.add(shadow);
+		overlay.add(panelFrame);
+		overlay.add(innerPanel);
+		overlay.add(badge);
 		overlay.add(overlayTitle);
+		overlay.add(divider);
+		overlay.add(descriptionText);
 		overlay.add(skipButton);
 		overlay.add(continueButton);
 
-		return overlay
+		return overlay;
 	}
 
 	spawnEmus(n: number): void {
@@ -784,9 +914,13 @@ export class FarmScreenView implements View {
 	}
 
 	deployMineAtMouse(): { node: Konva.Image; size: number } | null {
+		return this.deployMineAt(this.mouseX, this.mouseY);
+	}
+
+	deployMineAt(centerX: number, centerY: number): { node: Konva.Image; size: number } | null {
 		const mine = new Konva.Image({
-			x: this.mouseX - MINE_SIZE / 2,
-			y: this.mouseY - MINE_SIZE / 2,
+			x: centerX - MINE_SIZE / 2,
+			y: centerY - MINE_SIZE / 2,
 			width: MINE_SIZE,
 			height: MINE_SIZE,
 			image: mineImage,

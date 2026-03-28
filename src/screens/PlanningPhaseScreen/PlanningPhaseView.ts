@@ -112,7 +112,7 @@ export class PlanningPhaseView implements View {
 
 	private createDefenseSelectionPanel(): void {
 		const panelWidth = 600;
-		const panelHeight = 120;
+		const panelHeight = 150;
 		const panelX = (STAGE_WIDTH - panelWidth) / 2;
 		const panelY = STAGE_HEIGHT - panelHeight - 50;
 
@@ -134,7 +134,7 @@ export class PlanningPhaseView implements View {
 			x: panelX,
 			y: panelY + 10,
 			width: panelWidth,
-			text: "Select Defense Type:",
+			text: "Select a defense:",
 			fontSize: 18,
 			fontFamily: "Georgia",
 			fontStyle: "bold",
@@ -145,9 +145,9 @@ export class PlanningPhaseView implements View {
 
 		this.selectionPanelHint = new Konva.Text({
 			x: panelX,
-			y: panelY + 28,
+			y: panelY + 32,
 			width: panelWidth,
-			text: "Pick an item, place it, then switch anytime without closing this tray.",
+			text: "Select one below, then press P to place it.",
 			fontSize: 12,
 			fontFamily: "Arial",
 			fill: "#d5dde6",
@@ -156,12 +156,12 @@ export class PlanningPhaseView implements View {
 		this.defenseSelectionPanel.add(this.selectionPanelHint);
 
 		// Defense buttons
-		const defenses: DefenseType[] = ["barbed_wire", "sandbag", "machine_gun"];
-		const buttonWidth = 150;
-		const buttonHeight = 60;
-		const gap = 20;
+		const defenses: DefenseType[] = ["barbed_wire", "sandbag", "machine_gun", "mine"];
+		const buttonWidth = 132;
+		const buttonHeight = 72;
+		const gap = 10;
 		const startX = panelX + (panelWidth - (defenses.length * buttonWidth + (defenses.length - 1) * gap)) / 2;
-		const buttonY = panelY + 54;
+		const buttonY = panelY + 60;
 
 		defenses.forEach((defenseType, index) => {
 			const buttonX = startX + index * (buttonWidth + gap);
@@ -213,7 +213,7 @@ export class PlanningPhaseView implements View {
 
 			const effect = new Konva.Text({
 				x: 5,
-				y: 40,
+				y: 44,
 				width: buttonWidth - 10,
 				text: this.getEffectDescription(defenseType),
 				fontSize: 10,
@@ -274,13 +274,13 @@ export class PlanningPhaseView implements View {
 			);
 		}
 		if (this.selectionPanelTitle) {
-			this.selectionPanelTitle.text(enabled ? "Place Defenses" : "Select Defense Type:");
+			this.selectionPanelTitle.text(enabled ? "Place Defenses" : "Select a defense:");
 		}
 		if (this.selectionPanelHint) {
 			this.selectionPanelHint.text(
 				enabled
-					? "Click a defense anytime to switch, then keep placing on the farm."
-					: "Pick an item, place it, then switch anytime without closing this tray.",
+					? "Select one below, then press P to place it."
+					: "Select one below, then press P to place it.",
 			);
 		}
 		this.group.getLayer()?.draw();
@@ -294,6 +294,8 @@ export class PlanningPhaseView implements View {
 				return "Blocks emus";
 			case "machine_gun":
 				return "Auto-shoots";
+			case "mine":
+				return "One-shot blast";
 			default:
 				return "";
 		}
@@ -422,7 +424,7 @@ export class PlanningPhaseView implements View {
 
 	setDefenseInventory(inventory: Record<string, number>): void {
 		// Update inventory counts on defense buttons
-		const defenses: DefenseType[] = ["barbed_wire", "sandbag", "machine_gun"];
+		const defenses: DefenseType[] = ["barbed_wire", "sandbag", "machine_gun", "mine"];
 		defenses.forEach((defenseType) => {
 			const button = this.defenseButtons[defenseType];
 			const inventoryText = button ? ((button as any).inventoryText as Konva.Text | undefined) : undefined;

@@ -161,7 +161,7 @@ export class MorningEventsScreenController extends ScreenController {
             // Reward: 1 Mine
             this.status.addToInventory(GameItem.Mine, 1);
             this.audio.playSfx("buy"); // Play success sound
-            this.view.setInfoText("✓ CORRECT! You received 1 Mine!\nPress M in the farm to deploy it.", "#00aa00", 20); // Green, bigger
+            this.view.setInfoText("✓ CORRECT! You received 1 Mine!\nSelect Mine in the defense tray and press P to place it.", "#00aa00", 20); // Green, bigger
         } else {
             this.audio.playSfx("harvest"); // Play failure sound
             this.view.setInfoText("✗ Incorrect. Keep reading the facts and try again next time!", "#cc0000", 18); // Red
