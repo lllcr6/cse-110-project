@@ -62,15 +62,20 @@ export class MorningEventsScreenView implements View {
     private background: Konva.Image;
     private backgroundAnimation: Konva.Animation | null = null;
     private backgroundPhase = 0;
+    private headerPanel: Konva.Rect;
     private titleText: Konva.Text;
     private moneyText: Konva.Text;
     private inventoryText: Konva.Text;
     private infoText: Konva.Text;
     private dailyQuizButton: Konva.Group;
+    private continueButton: Konva.Group;
     private shopGroup: Konva.Group | null = null;
     private quizGroup: Konva.Group | null = null;
     private quizChoiceHandler: ((index: number) => void) | null = null;
     private shopPurchaseHandler: ((defenseType: string) => void) | null = null;
+    private buyCropHandler: (() => void) | null = null;
+    private sellCropHandler: (() => void) | null = null;
+    private sellEggHandler: (() => void) | null = null;
 
     constructor(
         onBuy: () => void,
@@ -85,6 +90,9 @@ export class MorningEventsScreenView implements View {
         this.group = new Konva.Group({ visible: false });
         this.quizChoiceHandler = onSelectQuizChoice ?? null;
         this.shopPurchaseHandler = onPurchaseDefense ?? null;
+        this.buyCropHandler = onBuy;
+        this.sellCropHandler = onSell;
+        this.sellEggHandler = onSellEgg;
 
         // Background image with subtle float animation
         const bgImage = loadImage(backgroundSrc);
@@ -126,15 +134,31 @@ export class MorningEventsScreenView implements View {
         }
         this.group.add(stallBackdrop);
 
+        this.headerPanel = new Konva.Rect({
+            x: STAGE_WIDTH / 2 - 250,
+            y: 42,
+            width: 500,
+            height: 180,
+            fill: "rgba(255, 248, 238, 0.78)",
+            stroke: "#8d6e63",
+            strokeWidth: 3,
+            cornerRadius: 22,
+            shadowColor: "rgba(0, 0, 0, 0.16)",
+            shadowBlur: 12,
+            shadowOffset: { x: 0, y: 5 },
+        });
+        this.group.add(this.headerPanel);
+
         // Title
         this.titleText = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 60,
+            y: 64,
             text: "Morning Events",
-            fontSize: 40,
+            fontSize: 34,
             fontFamily: "Arial",
-            fill: "#222",
+            fill: "#3e2723",
             align: "center",
+            fontStyle: "bold",
         });
         this.titleText.offsetX(this.titleText.width() / 2);
         this.group.add(this.titleText);
@@ -142,54 +166,89 @@ export class MorningEventsScreenView implements View {
         // Money / Inventory
         this.moneyText = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 140,
+            y: 112,
             text: "Money: $0",
-            fontSize: 28,
+            fontSize: 24,
             fontFamily: "Arial",
-            fill: "#333",
+            fill: "#2e7d32",
             align: "center",
+            fontStyle: "bold",
         });
         this.moneyText.offsetX(this.moneyText.width() / 2);
         this.group.add(this.moneyText);
 
         this.inventoryText = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 180,
+            y: 148,
             text: "Crops: 0",
-            fontSize: 24,
+            fontSize: 20,
             fontFamily: "Arial",
-            fill: "#333",
+            fill: "#455a64",
             align: "center",
         });
         this.inventoryText.offsetX(this.inventoryText.width() / 2);
         this.group.add(this.inventoryText);
 
-        // Buttons (properly spaced - smaller height to fit all)
-        const buyBtn = makeButton({ x: STAGE_WIDTH / 2 - 200, y: 260, width: 150, height: 50, text: "Buy Crop", fill: "#2e7d32" }, onBuy);
-        const sellBtn = makeButton({ x: STAGE_WIDTH / 2 + 50, y: 260, width: 150, height: 50, text: "Sell Crop", fill: "#c62828" }, onSell);
-        const sellEggBtn = makeButton({ x: STAGE_WIDTH / 2 - 75, y: 320, width: 150, height: 50, text: "Sell Egg ($35)", fill: "#c62828" }, onSellEgg);
-        const shopBtn = makeButton({ x: STAGE_WIDTH / 2 - 75, y: 380, width: 150, height: 50, text: "Defense Shop", fill: "#ff9800" }, () => onOpenShop?.());
-        const quizBtn = makeButton({ x: STAGE_WIDTH / 2 - 75, y: 440, width: 150, height: 50, text: "Daily Quiz", fill: "#8e24aa" }, () => onOpenQuiz?.());
+        const marketPanel = new Konva.Rect({
+            x: STAGE_WIDTH / 2 - 235,
+            y: 270,
+            width: 470,
+            height: 220,
+            fill: "rgba(255, 248, 232, 0.9)",
+            stroke: "#8d6e63",
+            strokeWidth: 3,
+            cornerRadius: 18,
+            shadowColor: "rgba(0, 0, 0, 0.18)",
+            shadowBlur: 10,
+            shadowOffset: { x: 0, y: 4 },
+        });
+        this.group.add(marketPanel);
+
+        const marketTitle = new Konva.Text({
+            x: STAGE_WIDTH / 2,
+            y: 292,
+            text: "Market Square",
+            fontSize: 24,
+            fontFamily: "Arial",
+            fill: "#4e342e",
+            fontStyle: "bold",
+            align: "center",
+        });
+        marketTitle.offsetX(marketTitle.width() / 2);
+        this.group.add(marketTitle);
+
+        const marketSubtitle = new Konva.Text({
+            x: STAGE_WIDTH / 2,
+            y: 324,
+            width: 360,
+            text: "Buy crops, sell goods, and stock up on defenses from one place.",
+            fontSize: 15,
+            fontFamily: "Arial",
+            fill: "#6d4c41",
+            align: "center",
+        });
+        marketSubtitle.offsetX(marketSubtitle.width() / 2);
+        this.group.add(marketSubtitle);
+
+        const shopBtn = makeButton({ x: STAGE_WIDTH / 2 - 100, y: 368, width: 200, height: 50, text: "Open Shop", fill: "#d97706" }, () => onOpenShop?.());
+        const quizBtn = makeButton({ x: STAGE_WIDTH / 2 - 100, y: 425, width: 200, height: 44, text: "Daily Quiz", fill: "#8e24aa" }, () => onOpenQuiz?.());
         quizBtn.visible(false);
         this.dailyQuizButton = quizBtn;
-        const contBtn = makeButton({ x: STAGE_WIDTH / 2 - 75, y: 500, width: 150, height: 50, text: "Continue", fill: "#1565c0" }, onContinue);
-        this.group.add(buyBtn);
-        this.group.add(sellBtn);
-        this.group.add(sellEggBtn);
+        this.continueButton = makeButton({ x: STAGE_WIDTH / 2 - 100, y: 425, width: 200, height: 50, text: "Continue", fill: "#1565c0" }, onContinue);
         this.group.add(shopBtn);
         this.group.add(quizBtn);
-        this.group.add(contBtn);
+        this.group.add(this.continueButton);
 
         // Informational text area (facts, quiz result, etc.)
         this.infoText = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: 210,
+            y: 182,
             text: "",
-            fontSize: 20,
+            fontSize: 16,
             fontFamily: "Arial",
-            fill: "#111",
+            fill: "#4e342e",
             align: "center",
-            width: STAGE_WIDTH - 80,
+            width: 430,
         });
         this.infoText.offsetX(this.infoText.width() / 2);
         this.group.add(this.infoText);
@@ -223,7 +282,23 @@ export class MorningEventsScreenView implements View {
 
     setDailyQuizButtonVisible(visible: boolean): void {
         this.dailyQuizButton.visible(visible);
+        this.setButtonPosition(this.continueButton, STAGE_WIDTH / 2 - 100, visible ? 472 : 425);
         this.group.getLayer()?.draw();
+    }
+
+    private setButtonPosition(button: Konva.Group, x: number, y: number): void {
+        const rect = button.children?.[0] as Konva.Rect | undefined;
+        const label = button.children?.[1] as Konva.Text | undefined;
+        if (!rect || !label) {
+            return;
+        }
+
+        rect.position({ x, y });
+        label.position({
+            x: x + rect.width() / 2,
+            y: y + rect.height() / 2 - 10,
+        });
+        label.offsetX(label.width() / 2);
     }
 
     showQuizPopup(question: string, choices: string[]): void {
@@ -334,13 +409,13 @@ export class MorningEventsScreenView implements View {
         }
     }
 
-    showShopPopup(defenseInventory: Record<string, number>, currentMoney: number): void {
+    showShopPopup(defenseInventory: Record<string, number>, currentMoney: number, cropCount: number, eggCount: number): void {
         this.hideShopPopup();
         this.hideQuizPopup(); // Close quiz if open
 
         const popup = new Konva.Group();
-        const panelWidth = STAGE_WIDTH - 80;
-        const panelHeight = 400;
+        const panelWidth = STAGE_WIDTH - 110;
+        const panelHeight = 540;
         const panelX = (STAGE_WIDTH - panelWidth) / 2;
         const panelY = (STAGE_HEIGHT - panelHeight) / 2;
 
@@ -350,9 +425,9 @@ export class MorningEventsScreenView implements View {
             width: panelWidth,
             height: panelHeight,
             fill: "#ffffff",
-            stroke: "#ff9800",
+            stroke: "#c47b22",
             strokeWidth: 3,
-            cornerRadius: 12,
+            cornerRadius: 16,
             shadowColor: "rgba(0, 0, 0, 0.25)",
             shadowBlur: 12,
             shadowOffset: { x: 0, y: 4 },
@@ -361,9 +436,9 @@ export class MorningEventsScreenView implements View {
 
         const title = new Konva.Text({
             x: STAGE_WIDTH / 2,
-            y: panelY + 20,
-            text: "Defense Shop",
-            fontSize: 28,
+            y: panelY + 18,
+            text: "Town Market",
+            fontSize: 30,
             fontFamily: "Arial",
             fill: "#2c3e50",
             align: "center",
@@ -375,8 +450,8 @@ export class MorningEventsScreenView implements View {
         const moneyDisplay = new Konva.Text({
             x: STAGE_WIDTH / 2,
             y: panelY + 55,
-            text: `Your Money: $${currentMoney}`,
-            fontSize: 20,
+            text: `Money: $${currentMoney}   |   Crops: ${cropCount}   |   Eggs: ${eggCount}`,
+            fontSize: 18,
             fontFamily: "Arial",
             fill: "#27ae60",
             align: "center",
@@ -385,38 +460,190 @@ export class MorningEventsScreenView implements View {
         moneyDisplay.offsetX(moneyDisplay.width() / 2);
         popup.add(moneyDisplay);
 
-        // Defense items
+        const goodsTitle = new Konva.Text({
+            x: panelX + 28,
+            y: panelY + 95,
+            text: "Farm Goods",
+            fontSize: 20,
+            fontFamily: "Arial",
+            fill: "#5d4037",
+            fontStyle: "bold",
+        });
+        popup.add(goodsTitle);
+
+        const goods = [
+            {
+                name: "Crop Seeds",
+                description: "Plant fresh wheat on an empty field.",
+                priceLabel: "Buy for $10",
+                priceColor: "#2e7d32",
+                ownedLabel: `Owned: ${cropCount}`,
+                actionLabel: "Buy",
+                actionColor: "#2e7d32",
+                actionEnabled: currentMoney >= 10,
+                onClick: () => this.buyCropHandler?.(),
+            },
+            {
+                name: "Harvested Crops",
+                description: "Sell stored crops for quick cash.",
+                priceLabel: "Sell for $5",
+                priceColor: "#c62828",
+                ownedLabel: `Stored: ${cropCount}`,
+                actionLabel: "Sell",
+                actionColor: "#c62828",
+                actionEnabled: cropCount > 0,
+                onClick: () => this.sellCropHandler?.(),
+            },
+            {
+                name: "Emu Eggs",
+                description: "Trade stolen eggs for a strong payout.",
+                priceLabel: "Sell for $35",
+                priceColor: "#c62828",
+                ownedLabel: `Stored: ${eggCount}`,
+                actionLabel: "Sell",
+                actionColor: "#c62828",
+                actionEnabled: eggCount > 0,
+                onClick: () => this.sellEggHandler?.(),
+            },
+        ];
+
+        goods.forEach((item, index) => {
+            const itemY = panelY + 128 + index * 72;
+            const itemGroup = new Konva.Group();
+
+            const itemBg = new Konva.Rect({
+                x: panelX + 22,
+                y: itemY,
+                width: panelWidth - 44,
+                height: 60,
+                fill: index % 2 === 0 ? "#fff8ef" : "#fdf2e3",
+                stroke: "#e0c097",
+                strokeWidth: 1.5,
+                cornerRadius: 12,
+            });
+            itemGroup.add(itemBg);
+
+            const nameText = new Konva.Text({
+                x: panelX + 36,
+                y: itemY + 10,
+                text: item.name,
+                fontSize: 18,
+                fontFamily: "Arial",
+                fill: "#3e2723",
+                fontStyle: "bold",
+            });
+            itemGroup.add(nameText);
+
+            const descText = new Konva.Text({
+                x: panelX + 36,
+                y: itemY + 33,
+                text: item.description,
+                fontSize: 13,
+                fontFamily: "Arial",
+                fill: "#6d4c41",
+            });
+            itemGroup.add(descText);
+
+            const priceText = new Konva.Text({
+                x: panelX + 360,
+                y: itemY + 12,
+                text: item.priceLabel,
+                fontSize: 15,
+                fontFamily: "Arial",
+                fill: item.priceColor,
+                fontStyle: "bold",
+            });
+            itemGroup.add(priceText);
+
+            const ownedText = new Konva.Text({
+                x: panelX + 360,
+                y: itemY + 34,
+                text: item.ownedLabel,
+                fontSize: 13,
+                fontFamily: "Arial",
+                fill: "#455a64",
+            });
+            itemGroup.add(ownedText);
+
+            const actionBtn = new Konva.Group({
+                x: panelX + panelWidth - 126,
+                y: itemY + 12,
+                cursor: item.actionEnabled ? "pointer" : "not-allowed",
+            });
+            const actionRect = new Konva.Rect({
+                width: 88,
+                height: 36,
+                fill: item.actionEnabled ? item.actionColor : "#b0bec5",
+                cornerRadius: 8,
+                stroke: item.actionEnabled ? "#37474f" : "#90a4ae",
+                strokeWidth: 1.5,
+            });
+            const actionText = new Konva.Text({
+                x: 44,
+                y: 9,
+                text: item.actionLabel,
+                fontSize: 15,
+                fontFamily: "Arial",
+                fill: "white",
+                align: "center",
+                fontStyle: "bold",
+            });
+            actionText.offsetX(actionText.width() / 2);
+            actionBtn.add(actionRect);
+            actionBtn.add(actionText);
+            if (item.actionEnabled) {
+                actionBtn.on("click", item.onClick);
+                actionBtn.on("tap", item.onClick);
+            }
+            itemGroup.add(actionBtn);
+            popup.add(itemGroup);
+        });
+
+        const defenseTitle = new Konva.Text({
+            x: panelX + 28,
+            y: panelY + 350,
+            text: "Defense Supplies",
+            fontSize: 20,
+            fontFamily: "Arial",
+            fill: "#2c3e50",
+            fontStyle: "bold",
+        });
+        popup.add(defenseTitle);
+
         const defenses = [
             { type: "barbed_wire", name: "Barbed Wire", cost: 10, description: "Slows emus down" },
             { type: "sandbag", name: "Sandbag Barrier", cost: 25, description: "Blocks emus temporarily" },
             { type: "machine_gun", name: "Machine Gun Nest", cost: 50, description: "Auto-shoots nearby emus" },
         ];
 
-        const itemHeight = 80;
-        const startY = panelY + 90;
-        const itemWidth = panelWidth - 40;
+        const cardGap = 12;
+        const cardWidth = (panelWidth - 44 - cardGap * 2) / 3;
+        const cardHeight = 92;
+        const startX = panelX + 22;
+        const startY = panelY + 380;
 
         defenses.forEach((defense, index) => {
-            const itemY = startY + index * (itemHeight + 10);
+            const cardX = startX + index * (cardWidth + cardGap);
             const itemGroup = new Konva.Group();
 
             const itemBg = new Konva.Rect({
-                x: panelX + 20,
-                y: itemY,
-                width: itemWidth,
-                height: itemHeight,
-                fill: "#f5f5f5",
-                stroke: "#ddd",
-                strokeWidth: 2,
-                cornerRadius: 8,
+                x: cardX,
+                y: startY,
+                width: cardWidth,
+                height: cardHeight,
+                fill: index % 2 === 0 ? "#eef5f7" : "#e8f0f4",
+                stroke: "#c6d4db",
+                strokeWidth: 1.5,
+                cornerRadius: 12,
             });
             itemGroup.add(itemBg);
 
             const nameText = new Konva.Text({
-                x: panelX + 30,
-                y: itemY + 10,
+                x: cardX + 14,
+                y: startY + 10,
+                width: cardWidth - 28,
                 text: defense.name,
-                fontSize: 18,
+                fontSize: 15,
                 fontFamily: "Arial",
                 fill: "#2c3e50",
                 fontStyle: "bold",
@@ -424,57 +651,59 @@ export class MorningEventsScreenView implements View {
             itemGroup.add(nameText);
 
             const descText = new Konva.Text({
-                x: panelX + 30,
-                y: itemY + 32,
+                x: cardX + 14,
+                y: startY + 32,
+                width: cardWidth - 28,
                 text: defense.description,
-                fontSize: 14,
+                fontSize: 11,
                 fontFamily: "Arial",
                 fill: "#7f8c8d",
             });
             itemGroup.add(descText);
 
-        const costText = new Konva.Text({
-            x: panelX + 30,
-            y: itemY + 54,
-            text: `Cost: $${defense.cost}`,
-            fontSize: 16,
-            fontFamily: "Arial",
-            fill: currentMoney >= defense.cost ? "#27ae60" : "#e74c3c",
-        });
-        itemGroup.add(costText);
+            const costText = new Konva.Text({
+                x: cardX + 14,
+                y: startY + 60,
+                text: `Cost: $${defense.cost}`,
+                fontSize: 13,
+                fontFamily: "Arial",
+                fill: currentMoney >= defense.cost ? "#27ae60" : "#e74c3c",
+                fontStyle: "bold",
+            });
+            itemGroup.add(costText);
 
-        const inventoryCount = defenseInventory[defense.type] || 0;
-        const inventoryText = new Konva.Text({
-            x: panelX + 140,
-            y: itemY + 56,
-            text: `Owned: ${inventoryCount}`,
-            fontSize: 14,
-            fontFamily: "Arial",
-            fill: "#34495e",
-        });
-        itemGroup.add(inventoryText);
+            const inventoryCount = defenseInventory[defense.type] || 0;
+            const inventoryText = new Konva.Text({
+                x: cardX + 14,
+                y: startY + 76,
+                text: `Owned: ${inventoryCount}`,
+                fontSize: 11,
+                fontFamily: "Arial",
+                fill: "#34495e",
+            });
+            itemGroup.add(inventoryText);
 
-        const buyBtn = new Konva.Group({
-            x: panelX + itemWidth - 110,
-            y: itemY + 25,
-            cursor: currentMoney >= defense.cost ? "pointer" : "not-allowed",
-        });
+            const buyBtn = new Konva.Group({
+                x: cardX + cardWidth - 92,
+                y: startY + 54,
+                cursor: currentMoney >= defense.cost ? "pointer" : "not-allowed",
+            });
 
             const buyRect = new Konva.Rect({
-                width: 80,
-                height: 30,
+                width: 76,
+                height: 28,
                 fill: currentMoney >= defense.cost ? "#27ae60" : "#95a5a6",
-                cornerRadius: 5,
+                cornerRadius: 7,
                 stroke: currentMoney >= defense.cost ? "#229954" : "#7f8c8d",
-                strokeWidth: 2,
+                strokeWidth: 1.5,
             });
             buyBtn.add(buyRect);
 
             const buyText = new Konva.Text({
-                x: 40,
-                y: 8,
+                x: 38,
+                y: 6,
                 text: "Buy",
-                fontSize: 14,
+                fontSize: 13,
                 fontFamily: "Arial",
                 fill: "#ffffff",
                 align: "center",
@@ -487,6 +716,9 @@ export class MorningEventsScreenView implements View {
                 buyBtn.on("click", () => {
                     this.shopPurchaseHandler?.(defense.type);
                 });
+                buyBtn.on("tap", () => {
+                    this.shopPurchaseHandler?.(defense.type);
+                });
             }
 
             itemGroup.add(buyBtn);
@@ -495,7 +727,7 @@ export class MorningEventsScreenView implements View {
 
         // Close button
         const closeBtn = makeButton(
-            { x: STAGE_WIDTH / 2 - 75, y: panelY + panelHeight - 50, width: 150, height: 40, text: "Close", fill: "#95a5a6" },
+            { x: STAGE_WIDTH / 2 - 85, y: panelY + panelHeight - 62, width: 170, height: 42, text: "Close Shop", fill: "#607d8b" },
             () => this.hideShopPopup()
         );
         popup.add(closeBtn);

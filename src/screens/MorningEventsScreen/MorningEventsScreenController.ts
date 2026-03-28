@@ -174,7 +174,12 @@ export class MorningEventsScreenController extends ScreenController {
             sandbag: this.status.getItemCount(GameItem.Sandbag),
             machine_gun: this.status.getItemCount(GameItem.MachineGun),
         };
-        this.view.showShopPopup(defenseInventory, this.status.getMoney());
+        this.view.showShopPopup(
+            defenseInventory,
+            this.status.getMoney(),
+            this.status.getItemCount(GameItem.Crop),
+            this.status.getItemCount(GameItem.Egg)
+        );
     }
 
     private handlePurchaseDefense(defenseType: string): void {
