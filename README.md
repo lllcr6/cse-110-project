@@ -1,6 +1,6 @@
-# CSE 110 Emu Defense
+# Emu Defense
 
-`CSE 110 Emu Defense` is a fast-paced browser strategy game where you defend a wheat farm from relentless emu attacks.
+`Emu Defense` is a fast-paced browser strategy game where you defend a wheat farm from relentless emu attacks.
 
 ## Live Demo
 
