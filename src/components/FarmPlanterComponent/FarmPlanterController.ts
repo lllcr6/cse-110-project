@@ -25,6 +25,7 @@ export class FarmPlanterController {
 			() => this.model.isEmpty()
 		);
 		this.view.setStage(this.model.getStage());
+		this.view.updateHealth(this.model.getHealth(), 100);
 		this.id = FarmPlanterController.nextId++;
 	}
 
@@ -47,6 +48,7 @@ export class FarmPlanterController {
 	advanceDay(): void {
 		this.model.advanceDay();
 		this.view.setStage(this.model.getStage());
+		this.view.updateHealth(this.model.getHealth(), 100);
 	}
 
 	plantForNewGame(): boolean {
@@ -54,6 +56,7 @@ export class FarmPlanterController {
 			return false;
 		}
 		this.view.setStage(this.model.getStage());
+		this.view.updateHealth(this.model.getHealth(), 100);
 		this.plantHandler?.();
 		return true;
 	}
@@ -74,6 +77,7 @@ export class FarmPlanterController {
 		// Destroy crop if it exists (any stage)
 		if (this.model.destroy()) {
 			this.view.setStage(this.model.getStage());
+			this.view.updateHealth(this.model.getHealth(), 100);
 			return true;
 		}
 		return false;
@@ -82,6 +86,7 @@ export class FarmPlanterController {
 	takeDamage(amount: number): boolean {
 		const died = this.model.decrimentHealth(amount);
 		this.view.setStage(this.model.getStage());
+		this.view.updateHealth(this.model.getHealth(), 100);
 		if (died){console.log("Planter " + this.getId() + " IS DEAD!!!!");}
 		return died;
 	}
@@ -100,6 +105,7 @@ export class FarmPlanterController {
 					console.log("planted")
 					this.status.removeFromInventory(GameItem.Crop, 1);
 					this.view.setStage(this.model.getStage());
+					this.view.updateHealth(this.model.getHealth(), 100);
 					this.plantHandler!();
 				}
 			}
@@ -110,6 +116,7 @@ export class FarmPlanterController {
 		if (this.model.getStage() === 2) {
 			if (this.model.harvest()) {
 				this.view.setStage(this.model.getStage());
+				this.view.updateHealth(this.model.getHealth(), 100);
 				this.harvestHandler?.();
 			}
 		}

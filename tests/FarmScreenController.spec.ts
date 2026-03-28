@@ -271,7 +271,7 @@ describe("FarmScreenController", () => {
     );
   });
 
-  it("ends the game when all crops are gone during defense placement", () => {
+  it("does not end the game when all crops are gone during defense placement", () => {
     const { controller, switcher } = createController();
 
     (controller as any).isPlanningPhase = false;
@@ -287,8 +287,56 @@ describe("FarmScreenController", () => {
 
     (controller as any).checkForCropLoss();
 
-    expect(switcher.switchToScreen).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "game_over" }),
-    );
+    expect(switcher.switchToScreen).not.toHaveBeenCalled();
+  });
+
+  it("machine gun fires at a nearby emu and consumes durability", () => {
+    const { controller } = createController();
+    const defense = {
+      getType: vi.fn(() => "machine_gun"),
+      getView: vi.fn(() => ({
+        x: () => 100,
+        y: () => 100,
+      })),
+      isActive: vi.fn(() => true),
+      showAttackEffect: vi.fn(),
+      takeDamage: vi.fn(),
+      remove: vi.fn(),
+    } as unknown as {
+      getType: () => string;
+      getView: () => { x: () => number; y: () => number };
+      isActive: () => boolean;
+      showAttackEffect: (x: number, y: number) => void;
+      takeDamage: (amount?: number) => void;
+      remove: () => void;
+    };
+
+    const emu = {
+      setSpeedModifier: vi.fn(),
+      setBlocked: vi.fn(),
+      getView: vi.fn(() => ({
+        x: () => 260,
+        y: () => 100,
+        width: () => 36,
+        height: () => 36,
+      })),
+      reduceHealth: vi.fn(),
+      getMaxHealth: vi.fn(() => 100),
+      remove: vi.fn(),
+      isActive: vi.fn(() => true),
+    } as unknown as FarmEmuController;
+
+    (controller as any).defenses = [defense];
+    (controller as any).emus = [emu];
+    (controller as any).isPlanningPhase = false;
+    (controller as any).isDefensePlacementMode = false;
+
+    (controller as any).checkDefenseEmuInteractions(0.016);
+
+    expect(defense.showAttackEffect).toHaveBeenCalled();
+    expect(emu.reduceHealth).toHaveBeenCalledWith(100);
+    expect(emu.remove).toHaveBeenCalled();
+    expect(defense.takeDamage).toHaveBeenCalledWith(1);
+    expect((controller as any).gunCooldowns.get(defense)).toBeCloseTo(0.5);
   });
 });

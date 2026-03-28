@@ -130,10 +130,21 @@ export class FarmScreenController extends ScreenController {
 		requestAnimationFrame(this.gameLoop);
 	}
 
+	private ensureGameLoopRunning(): void {
+		if (!this.isGameOver) {
+			requestAnimationFrame(this.gameLoop);
+		}
+	}
+
 	/**
 	 * Start the game
 	 */
 	startGame(newgame: boolean): void {	
+		const wasGameOver = this.isGameOver;
+		this.isGameOver = false;
+		if (wasGameOver) {
+			this.ensureGameLoopRunning();
+		}
 		if (newgame) {	
 			// Reset model state
 			this.status.reset();
@@ -147,7 +158,6 @@ export class FarmScreenController extends ScreenController {
 			this.selectedDefenseType = null;
 			this.isPlanningPhase = false;
 			this.isDefensePlacementMode = false;
-			this.isGameOver = false;
 			this.skipNextGrowthAdvance = true;
 
 			// Reset all planters to empty state
@@ -342,6 +352,11 @@ export class FarmScreenController extends ScreenController {
 	 * Start the round
 	 */
 	startRound(): void {
+		const wasGameOver = this.isGameOver;
+		this.isGameOver = false;
+		if (wasGameOver) {
+			this.ensureGameLoopRunning();
+		}
 		this.isDefensePlacementMode = false;
 		this.selectedDefenseType = null;
 		this.view.setPlacementCursor(false);
@@ -484,9 +499,12 @@ export class FarmScreenController extends ScreenController {
 			this.view.updateScore(this.status.getFinalScore());
 			this.audio.playSfx("harvest");
 			this.updateCropDisplay();
+			this.clearTargetsForPlanter(planter);
+			this.assignTargetsToAllEmus();
 		});
 		planter.setOnPlant(() => {
 			this.updateCropDisplay();
+			this.assignTargetsToAllEmus();
 		});
 	}
 
@@ -505,6 +523,10 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private checkForCropLoss(): void {
+		if (!this.hasActiveRound()) {
+			return;
+		}
+
 		if (!this.getPlantersWithCrop().length) {
 			this.endGame();
 		}
@@ -515,6 +537,7 @@ export class FarmScreenController extends ScreenController {
 		if (!candidates.length) {
 			// No crops left – game is over!!!!:
 			this.endGame();
+			emu.clearTarget();
 			this.emuTargets.set(emu, null);
 			return;
 		}
@@ -534,12 +557,19 @@ export class FarmScreenController extends ScreenController {
 				this.endGame();
 			}
 			for (const emu of this.emus){
+				emu.clearTarget();
 				this.emuTargets.set(emu, null);
 			}
 			return;
 		}
 
 		for (const emu of this.emus) {
+			const currentTarget = this.emuTargets.get(emu);
+			if (currentTarget && currentTarget.isEmpty()) {
+				emu.clearTarget();
+				this.emuTargets.set(emu, null);
+			}
+
 			if (emu.hasTarget()) {
 				continue;
 			}
@@ -550,6 +580,16 @@ export class FarmScreenController extends ScreenController {
 				emu.setTarget(target);
 				this.emuTargets.set(emu, planter);
 			}
+		}
+	}
+
+	private clearTargetsForPlanter(planter: FarmPlanterController): void {
+		for (const emu of this.emus) {
+			if (this.emuTargets.get(emu) !== planter) {
+				continue;
+			}
+			emu.clearTarget();
+			this.emuTargets.set(emu, null);
 		}
 	}
 
@@ -652,7 +692,7 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private handleMenuSaveAndExit(): void {
-		this.status.save();
+        this.status.save();
 		this.screenSwitcher.switchToScreen({ type: "main_menu" });
 	}
 
@@ -805,17 +845,22 @@ export class FarmScreenController extends ScreenController {
 			const defenseType = defense.getType();
 
 			if (defenseType === "machine_gun") {
+				const defenseCenterX = defenseX + defenseSize / 2;
+				const defenseCenterY = defenseY + defenseSize / 2;
+				const machineGunRange = 220;
 				const lastShot = this.gunCooldowns.get(defense) || 0;
 				if (lastShot <= 0) {
 					let closestEmu: FarmEmuController | null = null;
-					let closestDist = 100;
+					let closestDist = machineGunRange;
 
 					for (const emu of this.emus) {
 						const emuShape = emu.getView();
 						if (!emuShape) continue;
 
-						const dx = emuShape.x() - defenseX;
-						const dy = emuShape.y() - defenseY;
+						const emuCenterX = emuShape.x() + emuShape.width() / 2;
+						const emuCenterY = emuShape.y() + emuShape.height() / 2;
+						const dx = emuCenterX - defenseCenterX;
+						const dy = emuCenterY - defenseCenterY;
 						const dist = Math.sqrt(dx * dx + dy * dy);
 
 						if (dist < closestDist) {
@@ -824,7 +869,7 @@ export class FarmScreenController extends ScreenController {
 						}
 					}
 
-					if (closestEmu && closestDist <= 100) {
+					if (closestEmu && closestDist <= machineGunRange) {
 						const emuShape = closestEmu.getView();
 						if (emuShape) {
 							defense.showAttackEffect(

@@ -41,7 +41,7 @@ export class FarmEmuController {
 			return;
 		}
 
-		if (!this.lastTickTime) {
+		if (this.lastTickTime === null) {
 			this.lastTickTime = timestamp;
 		}
 
@@ -61,7 +61,7 @@ export class FarmEmuController {
 
 		const currentSpeed = EMU_SPEED * this.speedModifier;
 
-		if (!this.targetX || !this.targetY) {
+		if (this.targetX === null || this.targetY === null) {
 			if (this.randomMoveCountdown > 0) {
 				this.view.moveDelta(this.randomMove[0] * currentSpeed * deltaTime, this.randomMove[1] * currentSpeed * deltaTime);
 				this.randomMoveCountdown--;
@@ -109,8 +109,13 @@ export class FarmEmuController {
 		this.targetY = target.y();
 	}
 
+	clearTarget(): void {
+		this.targetX = null;
+		this.targetY = null;
+	}
+
 	hasTarget(): boolean {
-		return !!(this.targetX && this.targetY);
+		return this.targetX !== null && this.targetY !== null;
 	}
 
 	getView(): Konva.Image | null {
