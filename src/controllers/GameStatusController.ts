@@ -1,12 +1,20 @@
 import { STARTING_EMU_COUNT, GameItem } from "../constants";
+import {
+    type UpgradableDefenseType,
+    type DefenseType,
+    MAX_DEFENSE_LEVEL,
+    getDefenseUpgradeCost,
+} from "../components/DefenseComponent/DefenseModel";
 
 export type Inventory = Record<GameItem, number>;
+export type DefenseLevels = Record<UpgradableDefenseType, number>;
 
 type PersistedState = {
     day: number;
     inventory: Inventory;
     emuCount: number;
     score: number;
+    defenseLevels: DefenseLevels;
 };
 
 const STORAGE_KEY = "game:status";
@@ -20,6 +28,7 @@ export class GameStatusController {
     private day!: number;
     private inventory!: Inventory;
     private score!: number;
+    private defenseLevels!: DefenseLevels;
 
     constructor() {
         const saved = this.load();
@@ -28,6 +37,7 @@ export class GameStatusController {
             this.inventory = saved.inventory;
             this.emuCount = saved.emuCount;
             this.score = saved.score;
+            this.defenseLevels = saved.defenseLevels;
         } else {
             this.reset();
         }
@@ -40,6 +50,7 @@ export class GameStatusController {
             inventory: this.inventory,
             emuCount: this.emuCount,
             score: this.score,
+            defenseLevels: this.defenseLevels,
         };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
     }
@@ -48,10 +59,25 @@ export class GameStatusController {
         try {
             const str = localStorage.getItem(STORAGE_KEY);
             if (!str) return null;
-            return JSON.parse(str) as PersistedState;
+            const parsed = JSON.parse(str) as Partial<PersistedState>;
+            return {
+                day: parsed.day ?? 1,
+                inventory: parsed.inventory as Inventory,
+                emuCount: parsed.emuCount ?? STARTING_EMU_COUNT,
+                score: parsed.score ?? 0,
+                defenseLevels: this.normalizeDefenseLevels(parsed.defenseLevels),
+            };
         } catch {
             return null;
         }
+    }
+
+    private normalizeDefenseLevels(levels?: Partial<DefenseLevels>): DefenseLevels {
+        return {
+            barbed_wire: Math.max(1, Math.min(MAX_DEFENSE_LEVEL, levels?.barbed_wire ?? 1)),
+            sandbag: Math.max(1, Math.min(MAX_DEFENSE_LEVEL, levels?.sandbag ?? 1)),
+            machine_gun: Math.max(1, Math.min(MAX_DEFENSE_LEVEL, levels?.machine_gun ?? 1)),
+        };
     }
 
     // Day progression
@@ -112,6 +138,35 @@ export class GameStatusController {
         this.save();
     }
 
+    getDefenseLevels(): DefenseLevels {
+        return { ...this.defenseLevels };
+    }
+
+    getDefenseLevel(type: DefenseType): number {
+        if (type === "mine") {
+            return 1;
+        }
+        return this.defenseLevels[type];
+    }
+
+    getDefenseUpgradeCost(type: UpgradableDefenseType): number | null {
+        const currentLevel = this.defenseLevels[type];
+        if (currentLevel >= MAX_DEFENSE_LEVEL) {
+            return null;
+        }
+        return getDefenseUpgradeCost(type, currentLevel);
+    }
+
+    upgradeDefenseLevel(type: UpgradableDefenseType): boolean {
+        const cost = this.getDefenseUpgradeCost(type);
+        if (cost === null || !this.spend(cost)) {
+            return false;
+        }
+        this.defenseLevels[type] = Math.min(MAX_DEFENSE_LEVEL, this.defenseLevels[type] + 1);
+        this.save();
+        return true;
+    }
+
     /**
      * Get final score (use days survived for now)
      */
@@ -158,6 +213,7 @@ export class GameStatusController {
 			[GameItem.Sandbag]: 0,
 			[GameItem.MachineGun]: 0,
 		};
+        this.defenseLevels = this.normalizeDefenseLevels();
 		this.emuCount = STARTING_EMU_COUNT;
 		this.save();
 	}

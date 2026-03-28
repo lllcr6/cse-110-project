@@ -2,6 +2,14 @@
  * DefenseModel - Manages defense state
  */
 export type DefenseType = "barbed_wire" | "sandbag" | "machine_gun" | "mine";
+export type UpgradableDefenseType = Exclude<DefenseType, "mine">;
+export const MAX_DEFENSE_LEVEL = 10;
+
+export const UPGRADABLE_DEFENSE_TYPES: UpgradableDefenseType[] = [
+	"barbed_wire",
+	"sandbag",
+	"machine_gun",
+];
 
 export interface DefenseConfig {
 	cost: number;
@@ -13,8 +21,8 @@ export interface DefenseConfig {
 export const DEFENSE_CONFIGS: Record<DefenseType, DefenseConfig> = {
 	barbed_wire: {
 		cost: 10,
-		durability: Infinity, // Reusable
-		maxDurability: Infinity,
+		durability: 30,
+		maxDurability: 30,
 		effectiveness: 0.3, // Slows emus by 50%
 	},
 	sandbag: {
@@ -37,19 +45,47 @@ export const DEFENSE_CONFIGS: Record<DefenseType, DefenseConfig> = {
 	},
 };
 
+export function clampDefenseLevel(level: number): number {
+	return Math.max(1, Math.min(MAX_DEFENSE_LEVEL, Math.floor(level)));
+}
+
+export function getDefenseUpgradeCost(type: UpgradableDefenseType, currentLevel: number): number {
+	const safeLevel = clampDefenseLevel(currentLevel);
+	return DEFENSE_CONFIGS[type].cost * (2 ** (safeLevel - 1));
+}
+
+export function getDefenseStats(type: DefenseType, level: number = 1): DefenseConfig {
+	const base = DEFENSE_CONFIGS[type];
+	if (type === "mine") {
+		return { ...base };
+	}
+
+	const safeLevel = clampDefenseLevel(level);
+	const durabilityScale = 1 + (safeLevel - 1) * 0.4;
+	const maxDurability = Math.round(base.maxDurability * durabilityScale);
+
+	return {
+		...base,
+		durability: maxDurability,
+		maxDurability,
+	};
+}
+
 export class DefenseModel {
 	private type: DefenseType;
 	private x: number;
 	private y: number;
 	private durability: number;
+	private maxDurability: number;
 	private active: boolean;
 
-	constructor(type: DefenseType, x: number, y: number) {
+	constructor(type: DefenseType, x: number, y: number, level: number = 1) {
 		this.type = type;
 		this.x = x;
 		this.y = y;
-		const config = DEFENSE_CONFIGS[type];
-		this.durability = config.durability === Infinity ? Infinity : config.maxDurability;
+		const config = getDefenseStats(type, level);
+		this.maxDurability = config.maxDurability;
+		this.durability = config.maxDurability;
 		this.active = true;
 	}
 
@@ -70,7 +106,7 @@ export class DefenseModel {
 	}
 
 	getMaxDurability(): number {
-		return DEFENSE_CONFIGS[this.type].maxDurability;
+		return this.maxDurability;
 	}
 
 	isActive(): boolean {
@@ -88,6 +124,23 @@ export class DefenseModel {
 	}
 
 	getConfig(): DefenseConfig {
-		return DEFENSE_CONFIGS[this.type];
+		return {
+			...DEFENSE_CONFIGS[this.type],
+			durability: this.durability,
+			maxDurability: this.maxDurability,
+		};
+	}
+
+	applyLevel(level: number): void {
+		if (this.type === "mine") {
+			return;
+		}
+		const upgraded = getDefenseStats(this.type, level);
+		const damageTaken = Math.max(0, this.maxDurability - this.durability);
+		this.maxDurability = upgraded.maxDurability;
+		this.durability = Math.max(0, this.maxDurability - damageTaken);
+		if (this.durability > 0) {
+			this.active = true;
+		}
 	}
 }

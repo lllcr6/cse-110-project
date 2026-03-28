@@ -1,6 +1,12 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
+import {
+    MAX_DEFENSE_LEVEL,
+    getDefenseStats,
+    getDefenseUpgradeCost,
+    type UpgradableDefenseType,
+} from "../../components/DefenseComponent/DefenseModel.ts";
 import backgroundSrc from "../../../assets/background.png";
 import stallSrc from "../../../assets/stall.png";
 
@@ -73,6 +79,7 @@ export class MorningEventsScreenView implements View {
     private quizGroup: Konva.Group | null = null;
     private quizChoiceHandler: ((index: number) => void) | null = null;
     private shopPurchaseHandler: ((defenseType: string) => void) | null = null;
+    private shopUpgradeHandler: ((defenseType: string) => void) | null = null;
     private buyCropHandler: (() => void) | null = null;
     private sellCropHandler: (() => void) | null = null;
     private sellEggHandler: (() => void) | null = null;
@@ -86,10 +93,12 @@ export class MorningEventsScreenView implements View {
         onSelectQuizChoice?: (index: number) => void,
         onOpenShop?: () => void,
         onPurchaseDefense?: (defenseType: string) => void,
+        onUpgradeDefense?: (defenseType: string) => void,
     ) {
         this.group = new Konva.Group({ visible: false });
         this.quizChoiceHandler = onSelectQuizChoice ?? null;
         this.shopPurchaseHandler = onPurchaseDefense ?? null;
+        this.shopUpgradeHandler = onUpgradeDefense ?? null;
         this.buyCropHandler = onBuy;
         this.sellCropHandler = onSell;
         this.sellEggHandler = onSellEgg;
@@ -409,13 +418,19 @@ export class MorningEventsScreenView implements View {
         }
     }
 
-    showShopPopup(defenseInventory: Record<string, number>, currentMoney: number, cropCount: number, eggCount: number): void {
+    showShopPopup(
+        defenseInventory: Record<string, number>,
+        currentMoney: number,
+        cropCount: number,
+        eggCount: number,
+        defenseLevels: Record<UpgradableDefenseType, number>
+    ): void {
         this.hideShopPopup();
         this.hideQuizPopup(); // Close quiz if open
 
         const popup = new Konva.Group();
         const panelWidth = STAGE_WIDTH - 110;
-        const panelHeight = 540;
+        const panelHeight = 610;
         const panelX = (STAGE_WIDTH - panelWidth) / 2;
         const panelY = (STAGE_HEIGHT - panelHeight) / 2;
 
@@ -618,11 +633,16 @@ export class MorningEventsScreenView implements View {
 
         const cardGap = 12;
         const cardWidth = (panelWidth - 44 - cardGap * 2) / 3;
-        const cardHeight = 92;
+        const cardHeight = 150;
         const startX = panelX + 22;
         const startY = panelY + 380;
 
         defenses.forEach((defense, index) => {
+            const defenseType = defense.type as UpgradableDefenseType;
+            const level = defenseLevels[defenseType];
+            const stats = getDefenseStats(defenseType, level);
+            const upgradeCost = level >= MAX_DEFENSE_LEVEL ? null : getDefenseUpgradeCost(defenseType, level);
+            const canUpgrade = upgradeCost !== null && currentMoney >= upgradeCost;
             const cardX = startX + index * (cardWidth + cardGap);
             const itemGroup = new Konva.Group();
 
@@ -661,9 +681,30 @@ export class MorningEventsScreenView implements View {
             });
             itemGroup.add(descText);
 
+            const levelText = new Konva.Text({
+                x: cardX + 14,
+                y: startY + 58,
+                text: `Level ${level}/${MAX_DEFENSE_LEVEL}`,
+                fontSize: 12,
+                fontFamily: "Arial",
+                fill: "#1f3b57",
+                fontStyle: "bold",
+            });
+            itemGroup.add(levelText);
+
+            const durabilityText = new Konva.Text({
+                x: cardX + 14,
+                y: startY + 76,
+                text: `Durability: ${stats.maxDurability}`,
+                fontSize: 11,
+                fontFamily: "Arial",
+                fill: "#455a64",
+            });
+            itemGroup.add(durabilityText);
+
             const costText = new Konva.Text({
                 x: cardX + 14,
-                y: startY + 60,
+                y: startY + 98,
                 text: `Cost: $${defense.cost}`,
                 fontSize: 13,
                 fontFamily: "Arial",
@@ -675,7 +716,7 @@ export class MorningEventsScreenView implements View {
             const inventoryCount = defenseInventory[defense.type] || 0;
             const inventoryText = new Konva.Text({
                 x: cardX + 14,
-                y: startY + 76,
+                y: startY + 116,
                 text: `Owned: ${inventoryCount}`,
                 fontSize: 11,
                 fontFamily: "Arial",
@@ -684,8 +725,8 @@ export class MorningEventsScreenView implements View {
             itemGroup.add(inventoryText);
 
             const buyBtn = new Konva.Group({
-                x: cardX + cardWidth - 92,
-                y: startY + 54,
+                x: cardX + 14,
+                y: startY + 114,
                 cursor: currentMoney >= defense.cost ? "pointer" : "not-allowed",
             });
 
@@ -722,12 +763,61 @@ export class MorningEventsScreenView implements View {
             }
 
             itemGroup.add(buyBtn);
+
+            const upgradeBtn = new Konva.Group({
+                x: cardX + cardWidth - 96,
+                y: startY + 114,
+                cursor: upgradeCost === null ? "default" : canUpgrade ? "pointer" : "not-allowed",
+            });
+            const upgradeRect = new Konva.Rect({
+                width: 82,
+                height: 28,
+                fill: upgradeCost === null ? "#78909c" : canUpgrade ? "#7b1fa2" : "#b0bec5",
+                cornerRadius: 7,
+                stroke: upgradeCost === null ? "#546e7a" : canUpgrade ? "#6a1b9a" : "#90a4ae",
+                strokeWidth: 1.5,
+            });
+            const upgradeText = new Konva.Text({
+                x: 41,
+                y: 6,
+                text: upgradeCost === null ? "Max" : "Upgrade",
+                fontSize: 12,
+                fontFamily: "Arial",
+                fill: "#ffffff",
+                align: "center",
+                fontStyle: "bold",
+            });
+            upgradeText.offsetX(upgradeText.width() / 2);
+            upgradeBtn.add(upgradeRect);
+            upgradeBtn.add(upgradeText);
+            if (canUpgrade && upgradeCost !== null) {
+                upgradeBtn.on("click", () => {
+                    this.shopUpgradeHandler?.(defense.type);
+                });
+                upgradeBtn.on("tap", () => {
+                    this.shopUpgradeHandler?.(defense.type);
+                });
+            }
+            itemGroup.add(upgradeBtn);
+
+            const upgradeCostText = new Konva.Text({
+                x: cardX + 96,
+                y: startY + 98,
+                width: cardWidth - 110,
+                text: upgradeCost === null ? "Upgrade cost: MAX" : `Upgrade: $${upgradeCost}`,
+                fontSize: 11,
+                fontFamily: "Arial",
+                fill: upgradeCost === null ? "#607d8b" : canUpgrade ? "#7b1fa2" : "#78909c",
+                align: "right",
+            });
+            itemGroup.add(upgradeCostText);
+
             popup.add(itemGroup);
         });
 
         // Close button
         const closeBtn = makeButton(
-            { x: STAGE_WIDTH / 2 - 85, y: panelY + panelHeight - 62, width: 170, height: 42, text: "Close Shop", fill: "#607d8b" },
+            { x: STAGE_WIDTH / 2 - 85, y: panelY + panelHeight - 56, width: 170, height: 42, text: "Close Shop", fill: "#607d8b" },
             () => this.hideShopPopup()
         );
         popup.add(closeBtn);

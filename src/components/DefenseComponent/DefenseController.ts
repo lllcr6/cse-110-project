@@ -6,8 +6,8 @@ export class DefenseController {
 	private model: DefenseModel;
 	private view: DefenseView;
 
-	constructor(group: Konva.Group, type: DefenseType, x: number, y: number) {
-		this.model = new DefenseModel(type, x, y);
+	constructor(group: Konva.Group, type: DefenseType, x: number, y: number, level: number = 1) {
+		this.model = new DefenseModel(type, x, y, level);
 		this.view = new DefenseView(group, type, x, y);
 		this.view.updateDurability(this.model.getDurability(), this.model.getMaxDurability());
 	}
@@ -58,5 +58,10 @@ export class DefenseController {
 
 	showAttackEffect(targetX: number, targetY: number): void {
 		this.view.showMuzzleFlash(targetX, targetY);
+	}
+
+	applyUpgradeLevel(level: number): void {
+		this.model.applyLevel(level);
+		this.view.updateDurability(this.model.getDurability(), this.model.getMaxDurability());
 	}
 }

@@ -3,7 +3,12 @@ import { MorningEventsScreenView } from "./MorningEventsScreenView.ts";
 import { GameStatusController } from "../../controllers/GameStatusController.ts";
 import { AudioManager } from "../../services/AudioManager.ts";
 import { QuizController, type QuizFact } from "../../controllers/QuizController.ts";
-import { DEFENSE_CONFIGS, type DefenseType } from "../../components/DefenseComponent/DefenseModel.ts";
+import {
+    DEFENSE_CONFIGS,
+    type DefenseType,
+    type UpgradableDefenseType,
+    MAX_DEFENSE_LEVEL,
+} from "../../components/DefenseComponent/DefenseModel.ts";
 import { GameItem, ItemCosts, CROP_BUY_COST } from "../../constants.ts";
 
 /**
@@ -35,6 +40,7 @@ export class MorningEventsScreenController extends ScreenController {
             (idx) => this.handleQuizChoice(idx),
             () => this.handleOpenShop(),
             (defenseType) => this.handlePurchaseDefense(defenseType),
+            (defenseType) => this.handleUpgradeDefense(defenseType),
         );
     }
 
@@ -178,7 +184,8 @@ export class MorningEventsScreenController extends ScreenController {
             defenseInventory,
             this.status.getMoney(),
             this.status.getItemCount(GameItem.Crop),
-            this.status.getItemCount(GameItem.Egg)
+            this.status.getItemCount(GameItem.Egg),
+            this.status.getDefenseLevels()
         );
     }
 
@@ -207,6 +214,19 @@ export class MorningEventsScreenController extends ScreenController {
                 // Refresh shop popup to show updated inventory and money
                 this.handleOpenShop();
             }
+        }
+    }
+
+    private handleUpgradeDefense(defenseType: string): void {
+        const type = defenseType as UpgradableDefenseType;
+        if (this.status.getDefenseLevel(type) >= MAX_DEFENSE_LEVEL) {
+            return;
+        }
+
+        if (this.status.upgradeDefenseLevel(type)) {
+            this.audio.playSfx("buy");
+            this.refreshUI();
+            this.handleOpenShop();
         }
     }
 }

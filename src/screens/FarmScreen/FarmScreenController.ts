@@ -48,6 +48,7 @@ export class FarmScreenController extends ScreenController {
 	private defenses: DefenseController[] = [];
 	private isPlanningPhase: boolean = false;
 	private isDefensePlacementMode: boolean = false;
+	private isGameOver: boolean = false;
 	private selectedDefenseType: DefenseType | null = null;
 	private readonly planningHint = "Select a defense, then press T to place it at the cursor.";
 
@@ -107,6 +108,10 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private gameLoop = (timestamp: number): void => {
+		if (this.isGameOver) {
+			return;
+		}
+
 		const deltaTime: number = (timestamp - this.lastTickTime) * 0.001;
 		this.lastTickTime = timestamp;
 
@@ -142,6 +147,7 @@ export class FarmScreenController extends ScreenController {
 			this.selectedDefenseType = null;
 			this.isPlanningPhase = false;
 			this.isDefensePlacementMode = false;
+			this.isGameOver = false;
 			this.skipNextGrowthAdvance = true;
 
 			// Reset all planters to empty state
@@ -187,6 +193,9 @@ export class FarmScreenController extends ScreenController {
 		this.isPlanningPhase = true;
 		this.isDefensePlacementMode = false;
 		this.stopTimer();
+		this.refreshDefenseUpgradeLevels();
+		this.syncHudForUpcomingRound();
+		this.planningPhase?.setPlacementMode(false);
 		this.view.setPlanningPhaseMode(true);
 		this.view.setPlacementCursor(false);
 		this.view.setPlacementHint(this.planningHint);
@@ -203,11 +212,10 @@ export class FarmScreenController extends ScreenController {
 	private handlePlaceDefenses(): void {
 		this.isPlanningPhase = false;
 		this.isDefensePlacementMode = true;
+		this.syncHudForUpcomingRound();
+		this.planningPhase?.setPlacementMode(true);
 		this.view.setPlanningPhaseMode(false);
 		this.updateRoundActionButtonState();
-		if (this.planningPhase) {
-			this.planningPhase.hide();
-		}
 		if (this.selectedDefenseType) {
 			this.view.setPlacementCursor(true);
 			this.view.setPlacementHint(`Press T to place ${this.formatDefenseName(this.selectedDefenseType)} at the cursor.`);
@@ -227,7 +235,7 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private handleDefenseSelection(type: DefenseType | null): void {
-		if (!this.isPlanningPhase) {
+		if (!this.isPlanningPhase && !this.isDefensePlacementMode) {
 			this.selectedDefenseType = null;
 			return;
 		}
@@ -280,12 +288,14 @@ export class FarmScreenController extends ScreenController {
 		if (this.status.getItemCount(item) <= 0) {
 			return false;
 		}
+		const defenseLevel = type === "mine" ? 1 : this.status.getDefenseLevel(type);
 
 		const defense = new DefenseController(
 			this.view.getDefensesLayer(),
 			type,
 			x,
-			y
+			y,
+			defenseLevel
 		);
 
 		if (this.status.removeFromInventory(item, 1)) {
@@ -336,6 +346,7 @@ export class FarmScreenController extends ScreenController {
 		this.selectedDefenseType = null;
 		this.view.setPlacementCursor(false);
 		this.view.setPlacementHint();
+		this.planningPhase?.hide();
 		this.view.updateScore(this.status.getFinalScore());
 		this.updateCropDisplay();
 		this.timeRemaining = GAME_DURATION;
@@ -480,10 +491,6 @@ export class FarmScreenController extends ScreenController {
 	}
 
 	private checkForCropLoss(): void {
-		if (!this.hasActiveRound()) {
-			return;
-		}
-
 		if (!this.getPlantersWithCrop().length) {
 			this.endGame();
 		}
@@ -841,6 +848,10 @@ export class FarmScreenController extends ScreenController {
 					
 					if (defenseType === "barbed_wire") {
 						emu.setSpeedModifier(0.3);
+						defense.takeDamage(0.35 * deltaTime);
+						if (!defense.isActive()) {
+							defense.remove();
+						}
 					} else if (defenseType === "sandbag") {
 						emu.setBlocked(true);
 						defense.takeDamage(1 * deltaTime);
@@ -871,6 +882,22 @@ export class FarmScreenController extends ScreenController {
 	private resetMines(): void {
 		this.activeMines = [];
 		this.view.clearMines();
+	}
+
+	private refreshDefenseUpgradeLevels(): void {
+		for (const defense of this.defenses) {
+			const type = defense.getType();
+			if (type === "mine") {
+				continue;
+			}
+			defense.applyUpgradeLevel(this.status.getDefenseLevel(type));
+		}
+	}
+
+	private syncHudForUpcomingRound(): void {
+		this.timeRemaining = GAME_DURATION;
+		this.view.updateTimer(this.timeRemaining);
+		this.view.updateRound(this.status.getDay());
 	}
 
 	private updateRoundActionButtonState(): void {
@@ -943,6 +970,10 @@ export class FarmScreenController extends ScreenController {
 	 * Should be called in game loop
 	 */
 	endGame(): void {
+		if (this.isGameOver) {
+			return;
+		}
+		this.isGameOver = true;
 		this.stopTimer();
         this.view.clearEmus();
 		this.emuTargets.clear();
