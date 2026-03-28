@@ -430,7 +430,7 @@ export class FarmScreenView implements View {
 
 		// Planters
 		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
-			for (let y = 200; y < (STAGE_HEIGHT); y += (STAGE_HEIGHT - 200) / 4) {
+			for (let y = 200; y < 500; y += 100) {
 				const planter = new FarmPlanterController(this.group, x, y);
 				registerPlanter(planter);
 			}

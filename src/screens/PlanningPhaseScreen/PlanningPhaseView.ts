@@ -15,6 +15,9 @@ export class PlanningPhaseView implements View {
 	private tutorialPanel: Konva.Group;
 	private defenseSelectionPanel: Konva.Group;
 	private startButton: Konva.Group;
+	private selectionPanelBackdrop: Konva.Rect | null = null;
+	private selectionPanelTitle: Konva.Text | null = null;
+	private selectionPanelHint: Konva.Text | null = null;
 	private tooltip: Konva.Group | null = null;
 	private selectedDefenseType: DefenseType | null = null;
 	private defenseButtons: Partial<Record<DefenseType, Konva.Group>> = {};
@@ -113,29 +116,44 @@ export class PlanningPhaseView implements View {
 		const panelX = (STAGE_WIDTH - panelWidth) / 2;
 		const panelY = STAGE_HEIGHT - panelHeight - 50;
 
-		const panel = new Konva.Rect({
+		this.selectionPanelBackdrop = new Konva.Rect({
 			x: panelX,
 			y: panelY,
 			width: panelWidth,
 			height: panelHeight,
-			fill: "#34495e",
-			stroke: "#2c3e50",
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: panelHeight },
+			fillLinearGradientColorStops: [0, "#3e566b", 1, "#263646"],
+			stroke: "#1e2a36",
 			strokeWidth: 2,
-			cornerRadius: 8,
+			cornerRadius: 12,
 		});
-		this.defenseSelectionPanel.add(panel);
+		this.defenseSelectionPanel.add(this.selectionPanelBackdrop);
 
-		const title = new Konva.Text({
+		this.selectionPanelTitle = new Konva.Text({
 			x: panelX,
 			y: panelY + 10,
 			width: panelWidth,
 			text: "Select Defense Type:",
 			fontSize: 18,
-			fontFamily: "Arial",
-			fill: "#ecf0f1",
+			fontFamily: "Georgia",
+			fontStyle: "bold",
+			fill: "#f4f1e8",
 			align: "center",
 		});
-		this.defenseSelectionPanel.add(title);
+		this.defenseSelectionPanel.add(this.selectionPanelTitle);
+
+		this.selectionPanelHint = new Konva.Text({
+			x: panelX,
+			y: panelY + 28,
+			width: panelWidth,
+			text: "Pick an item, place it, then switch anytime without closing this tray.",
+			fontSize: 12,
+			fontFamily: "Arial",
+			fill: "#d5dde6",
+			align: "center",
+		});
+		this.defenseSelectionPanel.add(this.selectionPanelHint);
 
 		// Defense buttons
 		const defenses: DefenseType[] = ["barbed_wire", "sandbag", "machine_gun"];
@@ -143,7 +161,7 @@ export class PlanningPhaseView implements View {
 		const buttonHeight = 60;
 		const gap = 20;
 		const startX = panelX + (panelWidth - (defenses.length * buttonWidth + (defenses.length - 1) * gap)) / 2;
-		const buttonY = panelY + 40;
+		const buttonY = panelY + 54;
 
 		defenses.forEach((defenseType, index) => {
 			const buttonX = startX + index * (buttonWidth + gap);
@@ -158,10 +176,10 @@ export class PlanningPhaseView implements View {
 			const bg = new Konva.Rect({
 				width: buttonWidth,
 				height: buttonHeight,
-				fill: "#7f8c8d",
-				stroke: "#95a5a6",
+				fill: "#72808a",
+				stroke: "#9fb0bc",
 				strokeWidth: 2,
-				cornerRadius: 5,
+				cornerRadius: 8,
 				listening: true,
 			});
 			button.add(bg);
@@ -173,7 +191,7 @@ export class PlanningPhaseView implements View {
 				text: defenseType.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
 				fontSize: 14,
 				fontFamily: "Arial",
-				fill: "#ecf0f1",
+				fill: "#f4f1e8",
 				align: "center",
 			});
 			button.add(name);
@@ -186,7 +204,7 @@ export class PlanningPhaseView implements View {
 				text: "Owned: 0",
 				fontSize: 12,
 				fontFamily: "Arial",
-				fill: "#2ecc71",
+				fill: "#9fe7a2",
 				align: "center",
 			});
 			button.add(inventoryText);
@@ -200,7 +218,7 @@ export class PlanningPhaseView implements View {
 				text: this.getEffectDescription(defenseType),
 				fontSize: 10,
 				fontFamily: "Arial",
-				fill: "#bdc3c7",
+				fill: "#d5dde6",
 				align: "center",
 			});
 			button.add(effect);
@@ -209,7 +227,7 @@ export class PlanningPhaseView implements View {
 				// Toggle selection
 				if (this.selectedDefenseType === defenseType) {
 					this.selectedDefenseType = null;
-					bg.fill("#7f8c8d");
+					bg.fill("#72808a");
 					this.onDefenseSelected?.(null);
 				} else {
 					// Deselect previous
@@ -217,7 +235,7 @@ export class PlanningPhaseView implements View {
 						const prevButton = this.defenseButtons[this.selectedDefenseType];
 						if (prevButton) {
 							const prevBg = prevButton.children?.[0] as Konva.Rect;
-							if (prevBg) prevBg.fill("#7f8c8d");
+							if (prevBg) prevBg.fill("#72808a");
 						}
 					}
 					this.selectedDefenseType = defenseType;
@@ -239,6 +257,33 @@ export class PlanningPhaseView implements View {
 			this.defenseButtons[defenseType] = button;
 			this.defenseSelectionPanel.add(button);
 		});
+	}
+
+	setPlacementMode(enabled: boolean): void {
+		// In placement mode, keep only the compact defense tray visible so the farm stays bright.
+		this.overlay.visible(!enabled);
+		this.tutorialPanel.visible(!enabled);
+		this.startButton.visible(!enabled);
+		this.defenseSelectionPanel.visible(true);
+		this.defenseSelectionPanel.y(0);
+		if (this.selectionPanelBackdrop) {
+			this.selectionPanelBackdrop.fillLinearGradientColorStops(
+				enabled
+					? [0, "#36515f", 1, "#21313f"]
+					: [0, "#3e566b", 1, "#263646"],
+			);
+		}
+		if (this.selectionPanelTitle) {
+			this.selectionPanelTitle.text(enabled ? "Place Defenses" : "Select Defense Type:");
+		}
+		if (this.selectionPanelHint) {
+			this.selectionPanelHint.text(
+				enabled
+					? "Click a defense anytime to switch, then keep placing on the farm."
+					: "Pick an item, place it, then switch anytime without closing this tray.",
+			);
+		}
+		this.group.getLayer()?.draw();
 	}
 
 	private getEffectDescription(type: DefenseType): string {
@@ -412,4 +457,3 @@ export class PlanningPhaseView implements View {
 		this.group.visible(false);
 	}
 }
-

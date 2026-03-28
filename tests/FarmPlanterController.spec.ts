@@ -22,6 +22,10 @@ class FakePlanterView {
 		this.stage = stage;
 	}
 
+	updateHealth(): void {
+		// no-op - required by controller
+	}
+
 	getView(): { fire: (event: string) => void } {
 		return {
 			fire: (event: string) => {
@@ -61,4 +65,3 @@ describe("FarmPlanterController", () => {
 		expect(controller.getStage()).toBe(-1);
 	});
 });
-

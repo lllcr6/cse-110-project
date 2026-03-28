@@ -20,6 +20,10 @@ export class PlanningPhaseController {
 		this.view.setOnPlaceDefenses(handler);
 	}
 
+	setPlacementMode(enabled: boolean): void {
+		this.view.setPlacementMode(enabled);
+	}
+
 	setOnDefenseSelected(handler: (type: DefenseType | null) => void): void {
 		this.view.setOnDefenseSelected(handler);
 	}
@@ -40,4 +44,3 @@ export class PlanningPhaseController {
 		this.view.clearSelection();
 	}
 }
-
