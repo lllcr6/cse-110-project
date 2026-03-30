@@ -1,6 +1,7 @@
 // src/screens/Game2Screen/Game2ScreenView.ts
 import Konva from "konva";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants";
+import { createMinigameHudLabel, MINIGAME_UI_THEME } from "../minigameUi";
 
 export class HuntingScreenView {
   private group: Konva.Group;
@@ -20,7 +21,9 @@ export class HuntingScreenView {
       y: 0,
       width: STAGE_WIDTH,
       height: 80,
-      fill: "rgba(0, 0, 0, 0.6)",
+      fill: MINIGAME_UI_THEME.hudBg,
+      stroke: MINIGAME_UI_THEME.hudBorder,
+      strokeWidth: 1,
     });
     this.group.add(this.hudBanner);
 
@@ -30,70 +33,26 @@ export class HuntingScreenView {
       y: 80,
       width: STAGE_WIDTH,
       height: STAGE_HEIGHT - 80,
-      fill: "#1a3a3f", // Dark teal-blue for night theme
+      fill: "#17353a",
     });
     this.group.add(bg);
 
     // Ammo (Left side)
-    this.ammoLabelText = new Konva.Text({
-      x: 30,
-      y: 20,
-      text: "Ammo",
-      fontSize: 20,
-      fontFamily: "Arial",
-      fill: "#FFEB3B", // Light yellow
-    });
+    this.ammoLabelText = createMinigameHudLabel(30, 18, "Ammo", 18, "left");
     this.group.add(this.ammoLabelText);
 
-    this.ammoValueText = new Konva.Text({
-      x: 30,
-      y: 45,
-      text: "100",
-      fontSize: 28,
-      fontFamily: "Arial",
-      fill: "#FFEB3B", // Light yellow
-      fontStyle: "bold",
-    });
+    this.ammoValueText = createMinigameHudLabel(30, 43, "100", 28, "left");
     this.group.add(this.ammoValueText);
 
     // Emus Left (Center)
-    this.emusLabelText = new Konva.Text({
-      x: STAGE_WIDTH / 2,
-      y: 20,
-      text: "Emus Left",
-      fontSize: 20,
-      fontFamily: "Arial",
-      fill: "#FFEB3B", // Light yellow
-      align: "center",
-    });
-    this.emusLabelText.offsetX(this.emusLabelText.width() / 2);
+    this.emusLabelText = createMinigameHudLabel(STAGE_WIDTH / 2, 18, "Emus Left", 18, "center");
     this.group.add(this.emusLabelText);
 
-    this.emusValueText = new Konva.Text({
-      x: STAGE_WIDTH / 2,
-      y: 45,
-      text: "0",
-      fontSize: 28,
-      fontFamily: "Arial",
-      fill: "#FFEB3B", // Light yellow
-      fontStyle: "bold",
-      align: "center",
-    });
-    this.emusValueText.offsetX(this.emusValueText.width() / 2);
+    this.emusValueText = createMinigameHudLabel(STAGE_WIDTH / 2, 43, "0", 28, "center");
     this.group.add(this.emusValueText);
 
     // Timer (Right side)
-    this.timerText = new Konva.Text({
-      x: STAGE_WIDTH - 30,
-      y: 32,
-      text: "01:45",
-      fontSize: 28,
-      fontFamily: "Arial",
-      fill: "#4FC3F7", // Light blue
-      fontStyle: "bold",
-      align: "right",
-    });
-    this.timerText.offsetX(this.timerText.width());
+    this.timerText = createMinigameHudLabel(STAGE_WIDTH - 30, 32, "01:45", 28, "right");
     this.group.add(this.timerText);
   }
 
@@ -118,7 +77,6 @@ export class HuntingScreenView {
 
   updateDefeat(emusLeft: number) {
     this.emusValueText.text(emusLeft.toString());
-    this.emusValueText.offsetX(this.emusValueText.width() / 2);
     this.group.getLayer()?.draw();
   }
 
@@ -127,7 +85,6 @@ export class HuntingScreenView {
     const seconds = Math.floor(secondsRemaining % 60);
     const secondsStr = seconds.toString().padStart(2, "0");
     this.timerText.text(`${minutes.toString().padStart(2, "0")}:${secondsStr}`);
-    this.timerText.offsetX(this.timerText.width());
     this.group.getLayer()?.draw();
   }
 

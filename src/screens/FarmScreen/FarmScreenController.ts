@@ -414,9 +414,8 @@ export class FarmScreenController extends ScreenController {
     }
 
 	private handleEndGame(): void {
-		// End game button - trigger game over
-		this.stopTimer();
-		this.screenSwitcher.switchToScreen({ type: "game_over",survivalDays:this.status.getSurvivalDay() ,score: this.status.getFinalScore() });
+		// End game button - reuse the same cleanup path as a natural game over
+		this.endGame();
 	}
 
 	/**
@@ -1071,6 +1070,15 @@ export class FarmScreenController extends ScreenController {
 		return this.status.getFinalScore();
 	}
 
+	show(): void {
+		super.show();
+	}
+
+	hide(): void {
+		this.view.hideReplantOverlay();
+		super.hide();
+	}
+
 	/**
 	 * Get the view group
 	 */
@@ -1083,6 +1091,10 @@ export class FarmScreenController extends ScreenController {
 	 */
 	getPlanningPhaseView(): Konva.Group | null {
 		return this.planningPhase?.getView().getGroup() || null;
+	}
+
+	getReplantOverlayView(): Konva.Group {
+		return this.view.getReplantOverlayGroup();
 	}
 
 	handleDeployMine(): void {

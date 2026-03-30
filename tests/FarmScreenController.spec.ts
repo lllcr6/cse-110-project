@@ -11,6 +11,7 @@ class FakeFarmScreenView {
   spawnEmusMock = vi.fn();
   clearEmusMock = vi.fn();
   private readonly removeEmusHandler: () => void;
+  private readonly endGameHandler: () => void;
   menuButtonHandler: (() => void) | null = null;
   menuSaveHandler: (() => void) | null = null;
   menuBackHandler: (() => void) | null = null;
@@ -28,6 +29,11 @@ class FakeFarmScreenView {
   hideEggMenuOverlay = vi.fn();
   showReplantOverlay = vi.fn();
   hideReplantOverlay = vi.fn();
+  getReplantOverlayGroup = vi.fn(() => ({
+    visible: vi.fn(),
+    moveToTop: vi.fn(),
+    getLayer: vi.fn(() => ({ draw: vi.fn() })),
+  }));
   removeMineSprite = vi.fn();
   deployMineAt = vi.fn();
   setDefensePlaceClickHandler = vi.fn();
@@ -38,6 +44,7 @@ class FakeFarmScreenView {
   setPlacementCursor = vi.fn();
   setStartRoundButtonEnabled = vi.fn();
   setStartRoundTooltip = vi.fn();
+  endGame = vi.fn(() => this.endGameHandler());
   getDefensesLayer = vi.fn(() => ({
     add: vi.fn(),
     draw: vi.fn(),
@@ -48,11 +55,12 @@ class FakeFarmScreenView {
 
   constructor(
     _handleKeydown: (event: KeyboardEvent) => void,
-    _handleEndGame: () => void,  // Changed from handleStartDay to handleEndGame
+    handleEndGame: () => void,
     _registerEmu: (emu: FarmEmuController) => void,
     removeEmus: () => void,
     registerPlanter: (planter: FarmPlanterController) => void,
   ) {
+    this.endGameHandler = handleEndGame;
     this.removeEmusHandler = removeEmus;
     // This should be called if registerPlanter is a function
     if (typeof registerPlanter === 'function') {
@@ -130,14 +138,14 @@ let latestPlanter: { triggerHarvest: () => void; triggerPlant: () => void } | nu
 vi.mock("../src/screens/FarmScreen/FarmScreenView.ts", () => ({
   FarmScreenView: vi.fn((
     handleKeydown: (event: KeyboardEvent) => void,
-    handleEndGame: () => void,  // Changed from handleStartDay to handleEndGame
+    handleEndGame: () => void,
     registerEmu: (emu: FarmEmuController) => void,
     removeEmus: () => void,
     registerPlanter: (planter: FarmPlanterController) => void,
   ) => {
     latestView = new FakeFarmScreenView(
       handleKeydown, 
-      handleEndGame,  // Changed from handleStartDay to handleEndGame
+      handleEndGame,
       registerEmu, 
       removeEmus, 
       registerPlanter
@@ -488,6 +496,23 @@ describe("FarmScreenController", () => {
     (controller as any).checkForCropLoss();
 
     expect(switcher.switchToScreen).not.toHaveBeenCalled();
+  });
+
+  it("cleans up planning UI when the red end-game button is used", () => {
+    const { controller, switcher } = createController();
+
+    (controller as any).handleEndGame();
+
+    expect(latestPlanningPhase?.setPlacementMode).toHaveBeenCalledWith(false);
+    expect(latestPlanningPhase?.clearSelection).toHaveBeenCalled();
+    expect(latestPlanningPhase?.hide).toHaveBeenCalled();
+    expect(latestView?.hideReplantOverlay).toHaveBeenCalled();
+    expect(latestView?.clearEmusMock).toHaveBeenCalled();
+    expect(switcher.switchToScreen).toHaveBeenCalledWith({
+      type: "game_over",
+      survivalDays: expect.any(Number),
+      score: expect.any(Number),
+    });
   });
 
   it("machine gun fires at a nearby emu and consumes durability", () => {

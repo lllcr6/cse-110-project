@@ -437,17 +437,17 @@ export class FarmScreenView implements View {
 		);
 		this.group.add(this.eggMenuOverlay);
 		this.replantOverlay = new Konva.Group({ visible: false, listening: false });
-		const replantPanelWidth = 520;
-		const replantPanelHeight = 110;
+		const replantPanelWidth = 700;
+		const replantPanelHeight = 180;
 		const replantPanelX = (STAGE_WIDTH - replantPanelWidth) / 2;
-		const replantPanelY = STAGE_HEIGHT - replantPanelHeight - 24;
+		const replantPanelY = STAGE_HEIGHT - replantPanelHeight - 42;
 		const replantShadow = new Konva.Rect({
 			x: replantPanelX + 6,
 			y: replantPanelY + 8,
 			width: replantPanelWidth,
 			height: replantPanelHeight,
 			fill: "rgba(45, 24, 16, 0.22)",
-			cornerRadius: 18,
+			cornerRadius: 28,
 			listening: false,
 		});
 		const replantFrame = new Konva.Rect({
@@ -458,7 +458,7 @@ export class FarmScreenView implements View {
 			fill: "#6d4c41",
 			stroke: "#4e342e",
 			strokeWidth: 2,
-			cornerRadius: 18,
+			cornerRadius: 28,
 			listening: false,
 		});
 		const replantPanel = new Konva.Rect({
@@ -469,7 +469,7 @@ export class FarmScreenView implements View {
 			fill: "rgba(235, 214, 157, 0.98)",
 			stroke: "#c49a52",
 			strokeWidth: 2,
-			cornerRadius: 14,
+			cornerRadius: 22,
 			shadowColor: "black",
 			shadowBlur: 6,
 			shadowOpacity: 0.08,
@@ -479,21 +479,21 @@ export class FarmScreenView implements View {
 		const replantDivider = new Konva.Line({
 			points: [
 				replantPanelX + 42,
-				replantPanelY + 48,
+				replantPanelY + 68,
 				replantPanelX + replantPanelWidth - 42,
-				replantPanelY + 48,
+				replantPanelY + 68,
 			],
 			stroke: "#b9823b",
-			strokeWidth: 2,
+			strokeWidth: 3,
 			opacity: 0.75,
 			listening: false,
 		});
 		this.replantOverlayTitle = new Konva.Text({
 			x: replantPanelX + 24,
-			y: replantPanelY + 13,
+			y: replantPanelY + 18,
 			width: replantPanelWidth - 48,
 			text: "All crops harvested",
-			fontSize: 23,
+			fontSize: 38,
 			fontFamily: "Georgia",
 			fontStyle: "bold",
 			fill: "#4a2c1d",
@@ -502,10 +502,10 @@ export class FarmScreenView implements View {
 		});
 		this.replantOverlayMessage = new Konva.Text({
 			x: replantPanelX + 32,
-			y: replantPanelY + 58,
+			y: replantPanelY + 92,
 			width: replantPanelWidth - 64,
 			text: "Plant at least one crop to continue the round.",
-			fontSize: 17,
+			fontSize: 28,
 			fontFamily: "Georgia",
 			fill: "#5d4037",
 			align: "center",
@@ -518,7 +518,6 @@ export class FarmScreenView implements View {
 		this.replantOverlay.add(replantDivider);
 		this.replantOverlay.add(this.replantOverlayTitle);
 		this.replantOverlay.add(this.replantOverlayMessage);
-		this.group.add(this.replantOverlay);
 
 		// Planters
 		for (let x = (STAGE_WIDTH / 8) + (PLANTER_WIDTH / 2); x < STAGE_WIDTH; x += (7 * STAGE_WIDTH) / 32 - PLANTER_WIDTH / 8) {
@@ -905,12 +904,16 @@ export class FarmScreenView implements View {
 		this.replantOverlayMessage.text(message);
 		this.replantOverlay.moveToTop();
 		this.replantOverlay.visible(true);
-		this.group.getLayer()?.draw();
+		this.replantOverlay.getLayer()?.draw();
 	}
 
 	hideReplantOverlay(): void {
 		this.replantOverlay.visible(false);
-		this.group.getLayer()?.draw();
+		this.replantOverlay.getLayer()?.draw();
+	}
+
+	getReplantOverlayGroup(): Konva.Group {
+		return this.replantOverlay;
 	}
 
 	deployMineAtMouse(): { node: Konva.Image; size: number } | null {

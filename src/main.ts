@@ -61,6 +61,7 @@ class App implements ScreenSwitcher {
 		if (planningPhaseView) {
 			this.layer.add(planningPhaseView);
 		}
+		this.layer.add(this.farmController.getReplantOverlayView());
 		this.layer.add(this.huntingController.getView().getGroup());
 		this.layer.add(this.huntingIntroController.getView().getGroup());
 		this.layer.add(this.huntingEndController.getView().getGroup());

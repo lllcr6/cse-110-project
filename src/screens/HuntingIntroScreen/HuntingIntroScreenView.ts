@@ -1,42 +1,17 @@
 import Konva from "konva";
 import type { View } from "../../types";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants";
-
-function makeButton(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  text: string,
-  fill: string,
-  onClick: () => void
-): Konva.Group {
-  const group = new Konva.Group();
-  const rect = new Konva.Rect({
-    x,
-    y,
-    width,
-    height,
-    fill,
-    cornerRadius: 8,
-    stroke: "#333",
-    strokeWidth: 2,
-  });
-  const label = new Konva.Text({
-    x: x + width / 2,
-    y: y + height / 2 - 10,
-    text,
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: "white",
-    align: "center",
-  });
-  label.offsetX(label.width() / 2);
-  group.add(rect);
-  group.add(label);
-  group.on("click", onClick);
-  return group;
-}
+import {
+  createMinigameBackdrop,
+  createMinigameBody,
+  createMinigameButton,
+  createMinigameFooterHint,
+  createMinigameGlow,
+  createMinigameKeycap,
+  createMinigamePanel,
+  createMinigameTitle,
+  MINIGAME_UI_THEME,
+} from "../minigameUi";
 
 export class HuntingIntroScreenView implements View {
   private group: Konva.Group;
@@ -44,66 +19,100 @@ export class HuntingIntroScreenView implements View {
   constructor(onStart: () => void) {
     this.group = new Konva.Group({ visible: false });
 
-    // Background
-    const bg = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: STAGE_WIDTH,
-      height: STAGE_HEIGHT,
-      fill: "#AEEEEE",
-    });
-    this.group.add(bg);
+    this.group.add(createMinigameBackdrop());
+    this.group.add(createMinigameGlow());
 
-    // Title
-    const titleText = new Konva.Text({
-      x: STAGE_WIDTH / 2,
-      y: 80,
-      text: "How to Play",
-      fontSize: 48,
-      fontFamily: "Arial",
-      fill: "#222",
-      align: "center",
-      fontStyle: "bold",
-    });
-    titleText.offsetX(titleText.width() / 2);
+    const [shadow, panel] = createMinigamePanel(92, 72, 616, 556);
+    this.group.add(shadow);
+    this.group.add(panel);
+
+    const titleText = createMinigameTitle("EMU HUNT BRIEFING", STAGE_WIDTH / 2 - 240, 112, 480);
     this.group.add(titleText);
 
-    // Instructions
-    const instructions = [
-      "Defeat all the emus to win!",
-      "",
-      "Controls:",
-      "• W, A, S, D - Move",
-      "• Spacebar - Shoot",
-      "",
-      "Avoid obstacles and eliminate all enemies!",
-    ];
+    const subtitle = createMinigameBody(
+      "Move fast, conserve ammo, and clear the field before the timer hits zero.",
+      STAGE_WIDTH / 2 - 250,
+      162,
+      500,
+      18,
+    );
+    this.group.add(subtitle);
 
-    let yPos = 200;
-    instructions.forEach((instruction) => {
-      const text = new Konva.Text({
-        x: STAGE_WIDTH / 2,
-        y: yPos,
-        text: instruction,
-        fontSize: instruction.startsWith("•") ? 20 : instruction === "" ? 10 : 24,
-        fontFamily: "Arial",
-        fill: "#333",
-        align: "center",
-      });
-      text.offsetX(text.width() / 2);
-      this.group.add(text);
-      yPos += instruction === "" ? 10 : 35;
+    const divider = new Konva.Line({
+      points: [152, 214, STAGE_WIDTH - 152, 214],
+      stroke: "rgba(108, 83, 48, 0.34)",
+      strokeWidth: 2,
+      listening: false,
     });
+    this.group.add(divider);
 
-    // Start Button
-    const startBtn = makeButton(
-      STAGE_WIDTH / 2 - 100,
-      STAGE_HEIGHT - 100,
-      200,
+    const objectiveLabel = new Konva.Text({
+      x: 152,
+      y: 236,
+      text: "OBJECTIVE",
+      fontSize: 14,
+      fontFamily: "Arial",
+      fill: MINIGAME_UI_THEME.accent,
+      fontStyle: "bold",
+      letterSpacing: 2,
+    });
+    this.group.add(objectiveLabel);
+
+    const objectiveText = new Konva.Text({
+      x: 152,
+      y: 260,
+      width: 496,
+      text: "Defeat every emu on the map before you run out of ammo or time.",
+      fontSize: 22,
+      fontFamily: "Georgia",
+      fill: MINIGAME_UI_THEME.body,
+      lineHeight: 1.35,
+    });
+    this.group.add(objectiveText);
+
+    const controlsLabel = new Konva.Text({
+      x: 152,
+      y: 352,
+      text: "CONTROLS",
+      fontSize: 14,
+      fontFamily: "Arial",
+      fill: MINIGAME_UI_THEME.accent,
+      fontStyle: "bold",
+      letterSpacing: 2,
+    });
+    this.group.add(controlsLabel);
+
+    this.group.add(createMinigameKeycap(152, 384, 260, "W A S D : MOVE"));
+    this.group.add(createMinigameKeycap(152, 430, 260, "SPACE : FIRE"));
+
+    const guidance = new Konva.Text({
+      x: 152,
+      y: 492,
+      width: 496,
+      text: "Rocks and bushes block your bullets and give emus places to hide, so avoid bad angles and take clean shots when they step out.",
+      fontSize: 18,
+      fontFamily: "Georgia",
+      fill: MINIGAME_UI_THEME.body,
+      align: "left",
+      lineHeight: 1.34,
+    });
+    this.group.add(guidance);
+
+    const footerHint = createMinigameFooterHint(
+      152,
+      566,
+      496,
+      "Press START GAME when you're ready to enter the hunt.",
+    );
+    this.group.add(footerHint);
+
+    const startBtn = createMinigameButton(
+      STAGE_WIDTH / 2 - 110,
+      STAGE_HEIGHT - 104,
+      220,
       60,
-      "Start Game",
-      "#2e7d32",
-      onStart
+      "START GAME",
+      onStart,
     );
     this.group.add(startBtn);
   }
@@ -122,4 +131,3 @@ export class HuntingIntroScreenView implements View {
     return this.group;
   }
 }
-

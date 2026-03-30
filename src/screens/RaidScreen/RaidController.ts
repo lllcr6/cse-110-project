@@ -209,9 +209,10 @@ export class RaidController extends ScreenController {
 				`MISSION COMPLETE!\n\nYou reached the exit with\n${this.model.eggsCollected} eggs!`,
 			);
 		} else {
-			// --- LOSS CONDITION: Do NOT add eggs (they are lost) ---
+			// --- LOSS CONDITION: Keep the eggs you already collected ---
+			this.gameStatus.addEmuEggs(this.model.eggsCollected);
 			this.view.showEndPopup(
-				`TIME'S UP!\n\nYou collected ${this.model.eggsCollected} eggs,\nbut you got caught by the emus\nand dropped all your eggs to run!`,
+				`TIME'S UP!\n\nYou collected ${this.model.eggsCollected} eggs,\nand they still go to the shop.`,
 			);
 		}
 

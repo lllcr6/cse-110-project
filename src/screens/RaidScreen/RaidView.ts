@@ -2,10 +2,22 @@ import Konva from "konva";
 import type { View } from "../../types";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants";
 import { TILE_TYPE, MAZE_WIDTH, MAZE_HEIGHT } from "./RaidModel";
+import {
+	createMinigameBackdrop,
+	createMinigameButton,
+	createMinigameGlow,
+	createMinigameKeycap,
+	createMinigamePanel,
+	createMinigameHudLabel,
+	MINIGAME_UI_THEME,
+} from "../minigameUi";
 
 // Calculate the size of each tile to fit the stage
 const TILE_WIDTH = STAGE_WIDTH / MAZE_WIDTH;
-const TILE_HEIGHT = STAGE_HEIGHT / MAZE_HEIGHT;
+const RAID_HUD_HEIGHT = 88;
+const TILE_HEIGHT = Math.floor((STAGE_HEIGHT - RAID_HUD_HEIGHT) / MAZE_HEIGHT);
+const MAZE_PIXEL_HEIGHT = TILE_HEIGHT * MAZE_HEIGHT;
+const MAZE_START_Y = RAID_HUD_HEIGHT;
 
 export class RaidView implements View {
 	private group: Konva.Group;
@@ -13,6 +25,7 @@ export class RaidView implements View {
 	private eggCountText: Konva.Text;
 	private player: Konva.Rect;
 	private mazeGroup: Konva.Group;
+	private hudBanner: Konva.Rect;
 	
 	// Popups
 	private popupGroup: Konva.Group;
@@ -27,26 +40,23 @@ export class RaidView implements View {
 		this.mazeGroup = new Konva.Group();
 		this.group.add(this.mazeGroup);
 
-		// Timer UI
-		this.timerText = new Konva.Text({
-			x: STAGE_WIDTH - 150,
-			y: 10,
-			text: "Time: 30",
-			fontSize: 24,
-			fontFamily: "Arial",
-			fill: "white",
+		this.hudBanner = new Konva.Rect({
+			x: 0,
+			y: 0,
+			width: STAGE_WIDTH,
+			height: RAID_HUD_HEIGHT,
+			fill: MINIGAME_UI_THEME.hudBg,
+			stroke: MINIGAME_UI_THEME.hudBorder,
+			strokeWidth: 1,
 		});
+		this.group.add(this.hudBanner);
+
+		// Timer UI
+		this.timerText = createMinigameHudLabel(STAGE_WIDTH - 150, 18, "Time: 30", 22, "right");
 		this.group.add(this.timerText);
 
 		// Egg Count UI
-		this.eggCountText = new Konva.Text({
-			x: 20,
-			y: 10,
-			text: "Eggs: 0",
-			fontSize: 24,
-			fontFamily: "Arial",
-			fill: "white",
-		});
+		this.eggCountText = createMinigameHudLabel(20, 18, "Eggs: 0", 22, "left");
 		this.group.add(this.eggCountText);
 
 		// Player
@@ -68,21 +78,23 @@ export class RaidView implements View {
 		this.popupBg = new Konva.Rect({
 			width: 400,
 			height: 200,
-			fill: "black",
-			stroke: "white",
-			strokeWidth: 4,
-			cornerRadius: 10,
+			fillLinearGradientStartPoint: { x: 0, y: 0 },
+			fillLinearGradientEndPoint: { x: 0, y: 200 },
+			fillLinearGradientColorStops: [0, MINIGAME_UI_THEME.panelTop, 1, MINIGAME_UI_THEME.panelBottom],
+			stroke: MINIGAME_UI_THEME.panelBorder,
+			strokeWidth: 2,
+			cornerRadius: 20,
 			shadowColor: "black",
-			shadowBlur: 10,
-			shadowOpacity: 0.5,
+			shadowBlur: 16,
+			shadowOpacity: 0.3,
 		});
 		this.popupText = new Konva.Text({
 			width: 400,
 			height: 200,
 			text: "",
 			fontSize: 24,
-			fontFamily: "Arial",
-			fill: "white",
+			fontFamily: "Georgia",
+			fill: MINIGAME_UI_THEME.body,
 			align: "center",
 			verticalAlign: "middle",
 			padding: 20,
@@ -93,69 +105,83 @@ export class RaidView implements View {
 
 		// --- Intro Screen Group ---
 		this.introGroup = new Konva.Group({ visible: false });
-		
-		// Intro Background (Dark Overlay)
-		const introBg = new Konva.Rect({
-			width: STAGE_WIDTH,
-			height: STAGE_HEIGHT,
-			fill: "rgba(0, 0, 0, 0.90)", // Slightly darker for readability
-		});
-		this.introGroup.add(introBg);
+		this.introGroup.add(createMinigameBackdrop());
+		this.introGroup.add(createMinigameGlow());
 
-		// Intro Text (Moved UP to y: 30 to make room)
-		const introText = new Konva.Text({
+		const [introShadow, introPanel] = createMinigamePanel(88, 68, 624, 564);
+		this.introGroup.add(introShadow);
+		this.introGroup.add(introPanel);
+
+		const introTitle = new Konva.Text({
 			x: STAGE_WIDTH / 2,
-			y: 30, 
-			text: "NIGHT RAID\n\nInfiltrate the Emu Nest!\n\nControls:\n[W, A, S, D] to Move\n[SPACE] to Break Walls\n\nCollect 5 Eggs and reach the RED EXIT\nbefore time runs out!",
-			fontSize: 28,
-			fontFamily: "Arial",
-			fill: "white",
+			y: 110,
+			width: 420,
+			text: "NIGHT RAID BRIEFING",
+			fontSize: 32,
+			fontFamily: "Georgia",
+			fill: MINIGAME_UI_THEME.title,
 			align: "center",
-			lineHeight: 1.5,
+			fontStyle: "bold",
 		});
-		introText.offsetX(introText.width() / 2);
-		this.introGroup.add(introText);
+		introTitle.offsetX(introTitle.width() / 2);
+		this.introGroup.add(introTitle);
 
-		// Start Button (Moved DOWN to y: 480 to avoid overlap)
-		const startBtnGroup = new Konva.Group({
-			x: STAGE_WIDTH / 2 - 100,
-			y: 480,
-		});
-		const startBtnRect = new Konva.Rect({
-			width: 200,
-			height: 60,
-			fill: "green",
-			cornerRadius: 10,
-			stroke: "white",
+		const introDivider = new Konva.Line({
+			points: [150, 182, STAGE_WIDTH - 150, 182],
+			stroke: "rgba(108, 83, 48, 0.34)",
 			strokeWidth: 2,
-			cursor: "pointer",
-		});
-		const startBtnText = new Konva.Text({
-			width: 200,
-			height: 60,
-			text: "START RAID",
-			fontSize: 24,
-			fontFamily: "Arial",
-			fill: "white",
-			align: "center",
-			verticalAlign: "middle",
 			listening: false,
 		});
-		
-		startBtnGroup.add(startBtnRect);
-		startBtnGroup.add(startBtnText);
-		startBtnRect.on("click", onIntroStartClick);
-		
-		startBtnRect.on("mouseenter", () => {
-			const stage = this.group.getStage();
-			if (stage) stage.container().style.cursor = "pointer";
-		});
-		startBtnRect.on("mouseleave", () => {
-			const stage = this.group.getStage();
-			if (stage) stage.container().style.cursor = "default";
-		});
+		this.introGroup.add(introDivider);
 
-		this.introGroup.add(startBtnGroup);
+		const objective = new Konva.Text({
+			x: 150,
+			y: 204,
+			text: "MISSION",
+			fontSize: 14,
+			fontFamily: "Arial",
+			fill: MINIGAME_UI_THEME.accent,
+			fontStyle: "bold",
+			letterSpacing: 2,
+		});
+		this.introGroup.add(objective);
+
+		const objectiveText = new Konva.Text({
+			x: 150,
+			y: 226,
+			width: 500,
+			text: "Break through walls, gather eggs, and escape through the red exit before the timer hits zero.",
+			fontSize: 22,
+			fontFamily: "Georgia",
+			fill: MINIGAME_UI_THEME.body,
+			lineHeight: 1.35,
+		});
+		this.introGroup.add(objectiveText);
+
+		const controlsLabel = new Konva.Text({
+			x: 150,
+			y: 342,
+			text: "CONTROLS",
+			fontSize: 14,
+			fontFamily: "Arial",
+			fill: MINIGAME_UI_THEME.accent,
+			fontStyle: "bold",
+			letterSpacing: 2,
+		});
+		this.introGroup.add(controlsLabel);
+
+		this.introGroup.add(createMinigameKeycap(150, 374, 250, "W A S D : MOVE"));
+		this.introGroup.add(createMinigameKeycap(150, 420, 300, "SPACE : BREAK WALLS"));
+
+		const startBtn = createMinigameButton(
+			STAGE_WIDTH / 2 - 110,
+			STAGE_HEIGHT - 104,
+			220,
+			60,
+			"START RAID",
+			onIntroStartClick,
+		);
+		this.introGroup.add(startBtn);
 		this.group.add(this.introGroup);
 	}
 
@@ -170,7 +196,7 @@ export class RaidView implements View {
 				
 				this.mazeGroup.add(new Konva.Rect({
 					x: x * TILE_WIDTH,
-					y: y * TILE_HEIGHT,
+					y: MAZE_START_Y + y * TILE_HEIGHT,
 					width: TILE_WIDTH,
 					height: TILE_HEIGHT,
 					fill: color,
@@ -179,7 +205,7 @@ export class RaidView implements View {
 				if (type === TILE_TYPE.EGG) {
 					this.mazeGroup.add(new Konva.Ellipse({
 						x: x * TILE_WIDTH + TILE_WIDTH / 2,
-						y: y * TILE_HEIGHT + TILE_HEIGHT / 2,
+						y: MAZE_START_Y + y * TILE_HEIGHT + TILE_HEIGHT / 2,
 						radiusX: TILE_WIDTH / 4,
 						radiusY: TILE_HEIGHT / 3,
 						fill: "#FFFACD",
@@ -190,7 +216,8 @@ export class RaidView implements View {
 		// Night overlay
 		this.mazeGroup.add(new Konva.Rect({
 			width: STAGE_WIDTH,
-			height: STAGE_HEIGHT,
+			y: MAZE_START_Y,
+			height: MAZE_PIXEL_HEIGHT,
 			fill: "#191970",
 			opacity: 0.3,
 			listening: false
@@ -200,7 +227,7 @@ export class RaidView implements View {
 
 	updatePlayerPosition(x: number, y: number): void {
 		this.player.x(x * TILE_WIDTH + (TILE_WIDTH - this.player.width()) / 2);
-		this.player.y(y * TILE_HEIGHT + (TILE_HEIGHT - this.player.height()) / 2);
+		this.player.y(MAZE_START_Y + y * TILE_HEIGHT + (TILE_HEIGHT - this.player.height()) / 2);
 		this.group.getLayer()?.draw();
 	}
 

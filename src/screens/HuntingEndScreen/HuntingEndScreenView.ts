@@ -1,42 +1,14 @@
 import Konva from "konva";
 import type { View } from "../../types";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "../../constants";
-
-function makeButton(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  text: string,
-  fill: string,
-  onClick: () => void
-): Konva.Group {
-  const group = new Konva.Group();
-  const rect = new Konva.Rect({
-    x,
-    y,
-    width,
-    height,
-    fill,
-    cornerRadius: 8,
-    stroke: "#333",
-    strokeWidth: 2,
-  });
-  const label = new Konva.Text({
-    x: x + width / 2,
-    y: y + height / 2 - 10,
-    text,
-    fontFamily: "Arial",
-    fontSize: 24,
-    fill: "white",
-    align: "center",
-  });
-  label.offsetX(label.width() / 2);
-  group.add(rect);
-  group.add(label);
-  group.on("click", onClick);
-  return group;
-}
+import {
+  createMinigameBackdrop,
+  createMinigameBody,
+  createMinigameButton,
+  createMinigameGlow,
+  createMinigamePanel,
+  MINIGAME_UI_THEME,
+} from "../minigameUi";
 
 export class HuntingEndScreenView implements View {
   private group: Konva.Group;
@@ -47,83 +19,93 @@ export class HuntingEndScreenView implements View {
   constructor(onContinue: () => void) {
     this.group = new Konva.Group({ visible: false });
 
-    // Background (light red theme, similar to intro screen's light blue)
-    const bg = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: STAGE_WIDTH,
-      height: STAGE_HEIGHT,
-      fill: "#EEAEAE", // Light red (equivalent to intro's #AEEEEE light blue)
-    });
-    this.group.add(bg);
+    this.group.add(createMinigameBackdrop());
+    this.group.add(createMinigameGlow());
 
-    // Title
+    const [shadow, panel] = createMinigamePanel(84, 80, 632, 540);
+    this.group.add(shadow);
+    this.group.add(panel);
+
     this.titleText = new Konva.Text({
       x: STAGE_WIDTH / 2,
-      y: 150,
-      text: "GAME OVER!",
-      fontSize: 56,
-      fontFamily: "Arial",
-      fill: "#000", // Darker text
+      y: 118,
+      text: "MISSION REPORT",
+      fontSize: 38,
+      fontFamily: "Georgia",
+      fill: MINIGAME_UI_THEME.title,
       align: "center",
       fontStyle: "bold",
     });
     this.titleText.offsetX(this.titleText.width() / 2);
     this.group.add(this.titleText);
 
-    // Message Text (reason for game over)
     this.messageText = new Konva.Text({
       x: STAGE_WIDTH / 2,
-      y: 230,
+      y: 176,
       text: "",
-      fontSize: 28,
-      fontFamily: "Arial",
-      fill: "#111", // Darker text
+      fontSize: 22,
+      fontFamily: "Georgia",
+      fill: MINIGAME_UI_THEME.body,
       align: "center",
+      lineHeight: 1.3,
     });
     this.messageText.offsetX(this.messageText.width() / 2);
     this.group.add(this.messageText);
 
-    // Emus Killed Text
     this.emusKilledText = new Konva.Text({
       x: STAGE_WIDTH / 2,
-      y: 300,
+      y: 276,
       text: "Emus Killed: 0",
-      fontSize: 36,
+      fontSize: 34,
       fontFamily: "Arial",
-      fill: "#111", // Darker text
+      fill: MINIGAME_UI_THEME.accent,
+      fontStyle: "bold",
       align: "center",
     });
     this.emusKilledText.offsetX(this.emusKilledText.width() / 2);
     this.group.add(this.emusKilledText);
 
-    // Continue Button
-    const continueBtn = makeButton(
-      STAGE_WIDTH / 2 - 100,
-      STAGE_HEIGHT - 120,
-      200,
+    const detailCard = new Konva.Rect({
+      x: STAGE_WIDTH / 2 - 184,
+      y: 366,
+      width: 368,
+      height: 72,
+      fill: "rgba(255, 255, 255, 0.16)",
+      stroke: "rgba(108, 83, 48, 0.18)",
+      strokeWidth: 1,
+      cornerRadius: 18,
+    });
+    this.group.add(detailCard);
+
+    const detailText = createMinigameBody(
+      "You can continue once you are ready to head back to the farm.",
+      STAGE_WIDTH / 2 - 150,
+      384,
+      300,
+      17,
+    );
+    this.group.add(detailText);
+
+    const continueBtn = createMinigameButton(
+      STAGE_WIDTH / 2 - 110,
+      STAGE_HEIGHT - 108,
+      220,
       60,
-      "Continue",
-      "#1565c0",
-      onContinue
+      "CONTINUE",
+      onContinue,
     );
     this.group.add(continueBtn);
   }
 
   updateEmusKilled(count: number, reason: "ammo" | "time" | "victory"): void {
-    // Always show "GAME OVER!" title
-    this.titleText.text("GAME OVER!");
-    
-    // Update message based on reason
+    this.titleText.text(reason === "victory" ? "MISSION COMPLETE" : "MISSION FAILED");
     if (reason === "ammo") {
-      this.messageText.text("You ran out of ammo!");
+      this.messageText.text("You ran out of ammo before clearing the field.");
     } else if (reason === "time") {
-      this.messageText.text("You ran out of time!");
+      this.messageText.text("Time expired before the last emu went down.");
     } else {
-      // Victory case - still show GAME OVER but with victory message
-      this.messageText.text("All emus defeated!");
+      this.messageText.text("Every emu was defeated. Clean execution.");
     }
-    
     this.messageText.offsetX(this.messageText.width() / 2);
     this.titleText.offsetX(this.titleText.width() / 2);
     this.emusKilledText.text(`Emus Killed: ${count}`);
@@ -145,4 +127,3 @@ export class HuntingEndScreenView implements View {
     return this.group;
   }
 }
-
