@@ -37,6 +37,7 @@ export class FarmScreenController extends ScreenController {
 	private gameTimer: number | null = null;
 	private lastTickTime: number = 0;
 	private timeRemaining: number = GAME_DURATION;
+	private isMenuPaused: boolean = false;
 
 	private status: GameStatusController;
 	private audio: AudioManager;
@@ -113,6 +114,12 @@ export class FarmScreenController extends ScreenController {
 
 	private gameLoop = (timestamp: number): void => {
 		if (this.isGameOver) {
+			return;
+		}
+
+		if (this.isMenuPaused) {
+			this.lastTickTime = timestamp;
+			requestAnimationFrame(this.gameLoop);
 			return;
 		}
 
@@ -691,7 +698,9 @@ export class FarmScreenController extends ScreenController {
 
 
 	private handleMenuButton(): void {
+		this.isMenuPaused = true;
 		this.stopTimer();
+		this.setEmusPaused(true);
 		this.view.showMenuOverlay();
 	}
 
@@ -736,6 +745,7 @@ export class FarmScreenController extends ScreenController {
 
 	private handleMenuResume(): void {
 		this.view.hideMenuOverlay();
+		this.isMenuPaused = false;
 		if (this.isWaitingForReplant) {
 			this.view.setPlacementHint(this.replantHint);
 			return;
@@ -743,6 +753,7 @@ export class FarmScreenController extends ScreenController {
 		if (this.isWaitingForMinigameChoice) {
 			return;
 		}
+		this.setEmusPaused(false);
 		if (this.timeRemaining <= 0) {
 			this.endRound();
 			return;

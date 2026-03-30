@@ -296,6 +296,51 @@ describe("FarmScreenController", () => {
     clearIntervalSpy.mockRestore();
   });
 
+  it("pauses emu movement and game updates when the pause button is used", () => {
+    const { controller } = createController();
+    const emu = {
+      clearTarget: vi.fn(),
+      setBlocked: vi.fn(),
+      isActive: vi.fn(() => true),
+      remove: vi.fn(),
+    } as unknown as FarmEmuController;
+
+    (controller as any).registerEmu(emu);
+    (controller as any).gameTimer = 123;
+    (controller as any).isWaitingForReplant = false;
+    (controller as any).isWaitingForMinigameChoice = false;
+
+    const checkMineCollisions = vi.fn();
+    const checkEmuCropCollisions = vi.fn();
+    const checkDefenseEmuInteractions = vi.fn();
+    const checkForCropLoss = vi.fn();
+    const assignTargetsToAllEmus = vi.fn();
+    const updateRoundActionButtonState = vi.fn();
+
+    (controller as any).checkMineCollisions = checkMineCollisions;
+    (controller as any).checkEmuCropCollisions = checkEmuCropCollisions;
+    (controller as any).checkDefenseEmuInteractions = checkDefenseEmuInteractions;
+    (controller as any).checkForCropLoss = checkForCropLoss;
+    (controller as any).assignTargetsToAllEmus = assignTargetsToAllEmus;
+    (controller as any).updateRoundActionButtonState = updateRoundActionButtonState;
+
+    latestView?.menuButtonHandler?.();
+
+    expect((controller as any).isMenuPaused).toBe(true);
+    expect((controller as any).gameTimer).toBeNull();
+    expect(emu.setBlocked).toHaveBeenCalledWith(true);
+    expect(latestView?.showMenuOverlay).toHaveBeenCalled();
+
+    (controller as any).gameLoop(1000);
+
+    expect(checkMineCollisions).not.toHaveBeenCalled();
+    expect(checkEmuCropCollisions).not.toHaveBeenCalled();
+    expect(checkDefenseEmuInteractions).not.toHaveBeenCalled();
+    expect(checkForCropLoss).not.toHaveBeenCalled();
+    expect(assignTargetsToAllEmus).not.toHaveBeenCalled();
+    expect(updateRoundActionButtonState).not.toHaveBeenCalled();
+  });
+
   it("deploys a mine when handleDeployMine is called and player has mines", () => {
     const { controller, status } = createController();
     
